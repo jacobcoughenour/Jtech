@@ -1,2 +1,2 @@
 # JTech
-An oxide plugin for the game Rust
+An industrial automation overhaul for the game [Rust](playrust.com) using [Oxide](https://github.com/OxideMod/Oxide).

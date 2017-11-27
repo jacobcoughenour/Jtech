@@ -5,15 +5,14 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 
-namespace PluginMerger{
+namespace PluginMerger {
 
     internal class Program {
 
         private readonly static Regex isUsingReg;
         private readonly static Regex isNamespaceReg;
-        private readonly static Regex isCommentReg;
 
-        static Program(){
+        static Program() {
 
             Program.isUsingReg = new Regex("^using\\s+?[^\\(]+\\;$");
             Program.isNamespaceReg = new Regex("^using\\s+(.+?);$");
@@ -29,8 +28,8 @@ namespace PluginMerger{
             return Program.isUsingReg.IsMatch(line);
         }
 
-        private static int Main(string[] args)
-        {
+        private static int Main(string[] args) {
+
             Console.WriteLine(string.Concat("Args: ", string.Join("\n", args), "\n"));
             if ((int)args.Length != 2) {
                 Console.WriteLine("Usage: PluginMerger.exe \"Source\" \"Target\".");
@@ -40,7 +39,7 @@ namespace PluginMerger{
             using (StreamWriter streamWriter = File.CreateText(args[1])) { // write file to target (args[1])
 
                 List<string> usingStrings = new List<string>();
-                // TODO: Dictonary of namespaces and the strings they contain
+                // TODO: Dictionary of namespaces and the strings they contain
 
                 StringBuilder stringBuilder = new StringBuilder();
 

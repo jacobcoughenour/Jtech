@@ -16,6 +16,7 @@ namespace Oxide.Plugins {
 
 		void Init() {
 
+            Puts("hi");
 			// TODO
 			// register lang messages
 			// load config

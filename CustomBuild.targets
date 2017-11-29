@@ -1,11 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Target Name="Build">
-    <Message Text="Hello"></Message>
-    <Message Text="World"></Message>
-  </Target>
-  <Target Name="Rebuild">
-    <Message Text="Hello"></Message>
-    <Message Text="World"></Message>
-  </Target>
+	<Target Name="Build">
+		<Exec Command="$(SolutionDir)PluginMerger\PluginMerger\bin\Debug\PluginMerger.exe $(MSBuildProjectDirectory) $(SolutionDir)build\$(MSBuildProjectName).cs"/>
+		<Copy SourceFiles="$(SolutionDir)build\$(MSBuildProjectName).cs" DestinationFolder="$(RustServerDir)\oxide\plugins" />
+	</Target>
 </Project>

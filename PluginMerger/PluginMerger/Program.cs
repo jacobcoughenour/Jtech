@@ -31,16 +31,16 @@ namespace PluginMerger {
         private static int Main(string[] args) {
 
             Console.WriteLine(string.Concat("Args: ", string.Join("\n", args), "\n"));
-            if ((int)args.Length != 2 && (int)args.Length != 3) {
+            if ((int)args.Length != 2) {
                 Console.WriteLine("Usage: PluginMerger.exe \"Source\" \"Target\".");
                 return 1;
             }
 
-            StringBuilder stringBuilder = new StringBuilder();
-
             using (StreamWriter streamWriter = File.CreateText(args[1])) { // write file to target (args[1])
 
-                List<string> usingStrings = new List<string>();
+				StringBuilder stringBuilder = new StringBuilder();
+
+				List<string> usingStrings = new List<string>();
                 // TODO: Dictionary of namespaces and the strings they contain
 
                 string[] files = Directory.GetFiles(args[0], "*.cs", SearchOption.AllDirectories);
@@ -72,12 +72,6 @@ namespace PluginMerger {
                 }
                 stringBuilder.Insert(0, string.Concat(string.Join("\n", usingStrings), "\n")); // add usingStrings to the top
                 streamWriter.Write(stringBuilder.ToString()); // write to file
-            }
-
-            if ((int)args.Length == 3) {
-                using (StreamWriter streamWriter = File.CreateText(args[2])) { // write file to target (args[2])
-                    streamWriter.Write(stringBuilder.ToString()); // write to file
-                }
             }
             return 0;
         }

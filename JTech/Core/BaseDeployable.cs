@@ -11,7 +11,7 @@ namespace Oxide.Plugins.JTechCore {
 		// handle entity hooks (health, damage, repair)
 		// owner, parent
 		// cui menu
-		// spawn/destroy
+		// spawn/destroy 
 		// load/save
 
 

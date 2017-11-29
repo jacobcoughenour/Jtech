@@ -18,8 +18,7 @@ namespace Oxide.Plugins {
 		#region Oxide Hooks
 
 		void Init() {
-
-            Puts("hi");
+			
 			// TODO
 			// register lang messages
 			// load config
@@ -35,6 +34,7 @@ namespace Oxide.Plugins {
 		}
 
 		void OnLoaded() {
+
 			// TODO
 			// register permissions
 		}
@@ -48,11 +48,13 @@ namespace Oxide.Plugins {
 		}
 
 		void OnNewSave(string filename) {
+
 			// TODO
 			// clear save data
 		}
 
 		void OnServerSave() {
+
 			// TODO
 			// save deployables
 		}
@@ -61,11 +63,13 @@ namespace Oxide.Plugins {
 		#region Player
 
 		void OnPlayerInit(BasePlayer player) {
+
 			// TODO
 			// register user
 		}
 
 		void OnPlayerDisconnected(BasePlayer player) {
+
 			// TODO
 			// unregister user
 		}
@@ -75,6 +79,7 @@ namespace Oxide.Plugins {
 		#region Structure
 
 		void OnHammerHit(BasePlayer player, HitInfo hit) {
+
 			// TODO
 			// open menu if deployable
 		}
@@ -95,7 +100,7 @@ namespace Oxide.Plugins.JTechCore {
 		// handle entity hooks (health, damage, repair)
 		// owner, parent
 		// cui menu
-		// spawn/destroy
+		// spawn/destroy 
 		// load/save
 
 

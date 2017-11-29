@@ -15,4 +15,4 @@ Now you can open JTech.sln in Visual Studio and get started!
 
 ## Build
 
-To build and run JTech on your server, just build the JTech project (Ctrl-Shift-B).  This starts the PluginMerger script that combines all the .cs files to JTech.cs and saves it in your server plugins folder.  If you have the your server running, oxide auto reloads the plugin for you.
+To build and run JTech on your server, just build the JTech project (Ctrl-Shift-B).  This starts the PluginMerger script that combines all the .cs files to JTech.cs and saves it to the build folder and your server plugins folder.  If you have the your server running, oxide auto reloads the plugin for you.

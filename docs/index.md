@@ -2,6 +2,8 @@
 layout: default
 ---
 
+![](https://i.imgur.com/qncKz40.jpg)
+
 Text can be **bold**, _italic_, or ~~strikethrough~~.
 
 [Link to another page](another-page).

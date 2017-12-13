@@ -237,8 +237,10 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Core\BaseDeployable.cs" />
+    <Compile Include="Core\Cui.cs" />
     <Compile Include="Core\Data.cs" />
     <Compile Include="Core\DeployableManager.cs" />
+    <Compile Include="Core\UserInfo.cs" />
     <Compile Include="Deployables\Pipe.cs" />
     <Compile Include="Main.cs" />
   </ItemGroup>

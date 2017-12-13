@@ -1,8 +1,12 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Reflection;
 using Oxide.Core.Plugins;
 using Oxide.Plugins.JTechCore;
+using Oxide.Game.Rust.Cui;
+using Oxide.Core.Libraries.Covalence;
+using UnityEngine;
 
 namespace Oxide.Plugins {
 
@@ -16,11 +20,16 @@ namespace Oxide.Plugins {
 
 		void Init() {
 
-            Puts("hi");
 			// TODO
 			// register lang messages
 			// load config
 			// load commands
+
+			NextFrame(() => {
+				foreach (var player in BasePlayer.activePlayerList)
+					UserInfo.Get(player);
+			});
+
 		}
 
 		void OnServerInitialized() {
@@ -29,20 +38,53 @@ namespace Oxide.Plugins {
 			// load save data
 			// load deployables from save data
 			// Put loaded message
-		}
-
-		void OnLoaded() {
-			// TODO
-			// register permissions
+			
 		}
 
 		void Unload() {
 
 			// TODO
-			// destroy cui for each user
 			// save deployables
 			// unload deployables
+
+			// Destroy UserInfo from all the players
+			var users = UnityEngine.Object.FindObjectsOfType<UserInfo>();
+			if (users != null) {
+				foreach (var go in users) {
+					if (!string.IsNullOrEmpty(go.overlay))
+						CuiHelper.DestroyUi(go.player, go.overlay);
+					GameObject.Destroy(go);
+				}
+			}
+
+			
+					
 		}
+
+		// removes anything named UserInfo from the player
+		//[ConsoleCommand("jtech.clean")]
+		//private void cmdpipechangedir(ConsoleSystem.Arg arg) {
+
+		//	List<UnityEngine.Object> uis = new List<UnityEngine.Object>();
+		//	foreach (var player in BasePlayer.activePlayerList) {
+		//		foreach (var c in player.GetComponents<Component>()) {
+		//			if (c.GetType().ToString() == "Oxide.Plugins.JTechCore.UserInfo") {
+		//				uis.Add(c);
+		//			}
+		//		}
+		//	}
+
+		//	foreach (var u in uis) {
+		//		UnityEngine.Object.Destroy(u);
+		//	}
+
+		//	Puts($"{uis.Count} destroyed");
+
+		//	NextFrame(() => {
+		//		foreach (var player in BasePlayer.activePlayerList)
+		//			UserInfo.Get(player);
+		//	});
+		//}
 
 		void OnNewSave(string filename) {
 			// TODO
@@ -58,13 +100,8 @@ namespace Oxide.Plugins {
 		#region Player
 
 		void OnPlayerInit(BasePlayer player) {
-			// TODO
-			// register user
-		}
-
-		void OnPlayerDisconnected(BasePlayer player) {
-			// TODO
-			// unregister user
+			// Add UserInfo to player
+			UserInfo.Get(player);
 		}
 
 		#endregion
@@ -80,6 +117,12 @@ namespace Oxide.Plugins {
 
 
 		#endregion
+
+		
+		[ConsoleCommand("jtech.closeoverlay")]
+		private void closeoverlay(ConsoleSystem.Arg arg) {
+			UserInfo.Get(arg.Player()).HideOverlay();
+		}
 
 	}
 }

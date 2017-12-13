@@ -17,12 +17,7 @@ namespace Oxide.Plugins.JTechCore {
 
 		public BaseDeployable() { }
 
-		public bool Spawn(out string error) {
-			error = string.Empty;
-
-
-			return true;
-		}
+		
 
 	}
 
@@ -31,7 +26,7 @@ namespace Oxide.Plugins.JTechCore {
 		// TODO
 	}
 
-	// component added to parent for handling hooks and update
+	// component added to parent for handling hooks
 	public class BaseDeployableBehaviour : BaseDeployableChild {
 		// TODO
 	}

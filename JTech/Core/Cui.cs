@@ -74,6 +74,39 @@ namespace Oxide.Plugins.JTechCore {
 				},
 			}
 		};
+
+		public static class Menu {
+
+			public static string CreateOverlay(CuiElementContainer elements) {
+
+				string parent = elements.Add(
+					new CuiPanel {
+						Image = { Color = "0.004 0.341 0.608 0.86" },
+						RectTransform = { AnchorMin = "0 0", AnchorMax = "1 1" },
+						CursorEnabled = true
+					}
+				);
+
+				elements.Add(
+					new CuiButton {
+						Button = { Command = $"jtech.closeoverlay", Color = "0 0 0 0" },
+						RectTransform = { AnchorMin = "0 0", AnchorMax = "1 1" },
+						Text = { Text = string.Empty }
+					}, parent
+				);
+
+				elements.Add(
+					new CuiButton {
+						Button = { Command = "", Color = "1 1 0 0.2" },
+						RectTransform = { AnchorMin = "0.4 0.45", AnchorMax = "0.48 0.55" },
+						Text = { Text = "hi", FontSize = 12, Align = TextAnchor.MiddleCenter, Color = "1 1 1 0.5" }
+					}, parent
+				);
+				
+				return parent;
+			}
+
+		}
 	}
 
 }

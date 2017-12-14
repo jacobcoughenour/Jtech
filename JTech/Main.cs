@@ -50,15 +50,13 @@ namespace Oxide.Plugins {
 			// Destroy UserInfo from all the players
 			var users = UnityEngine.Object.FindObjectsOfType<UserInfo>();
 			if (users != null) {
-				foreach (var go in users) {
-					if (!string.IsNullOrEmpty(go.overlay))
-						CuiHelper.DestroyUi(go.player, go.overlay);
+				foreach (UserInfo go in users) {
+					go.HideOverlay();
 					GameObject.Destroy(go);
 				}
 			}
 
-			
-					
+
 		}
 
 		// removes anything named UserInfo from the player
@@ -108,20 +106,29 @@ namespace Oxide.Plugins {
 
 		#region Structure
 
-		void OnHammerHit(BasePlayer player, HitInfo hit) {
-			// TODO
-			// open menu if deployable
+		//void OnHammerHit(BasePlayer player, HitInfo hit) {
+		//	// TODO
+		//	// open menu if deployable
+		//}
+
+		#endregion
+
+
+		#endregion
+
+		[ChatCommand("jt")]
+		private void jtechmainchat(BasePlayer player, string cmd, string[] args) {
+			UserInfo.ShowOverlay(player);
 		}
 
-		#endregion
+		[ConsoleCommand("jtech.showoverlay")]
+		private void showoverlay(ConsoleSystem.Arg arg) {
+			UserInfo.ShowOverlay(arg.Player());
+		}
 
-
-		#endregion
-
-		
 		[ConsoleCommand("jtech.closeoverlay")]
 		private void closeoverlay(ConsoleSystem.Arg arg) {
-			UserInfo.Get(arg.Player()).HideOverlay();
+			UserInfo.HideOverlay(arg.Player());
 		}
 
 	}

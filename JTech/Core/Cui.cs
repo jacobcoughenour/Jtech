@@ -79,14 +79,30 @@ namespace Oxide.Plugins.JTechCore {
 
 			public static string CreateOverlay(CuiElementContainer elements) {
 
+				float aspect = 0.5625f; // use this to scale width values for 1:1 aspect
+				
+				float buttonsize = 0.15f;
+				float buttonspacing = 0.04f * aspect;
+				int numofbuttons = 4;
+				int maxbuttonswrap = 8;
+
 				string parent = elements.Add(
-					new CuiPanel {
+					new CuiPanel { // blue background
 						Image = { Color = "0.004 0.341 0.608 0.86" },
 						RectTransform = { AnchorMin = "0 0", AnchorMax = "1 1" },
 						CursorEnabled = true
 					}
 				);
 
+				elements.Add(
+					AddOutline(
+						new CuiLabel {
+							Text = { Text = "Choose a Deployable", FontSize = 22, Align = TextAnchor.MiddleCenter, Color = "1 1 1 1" },
+							RectTransform = { AnchorMin = "0 0.5", AnchorMax = "1 1" }
+						}, parent)
+				);
+
+				// close overlay if you click the background
 				elements.Add(
 					new CuiButton {
 						Button = { Command = $"jtech.closeoverlay", Color = "0 0 0 0" },
@@ -95,14 +111,45 @@ namespace Oxide.Plugins.JTechCore {
 					}, parent
 				);
 
-				elements.Add(
-					new CuiButton {
-						Button = { Command = "", Color = "1 1 0 0.2" },
-						RectTransform = { AnchorMin = "0.4 0.45", AnchorMax = "0.48 0.55" },
-						Text = { Text = "hi", FontSize = 12, Align = TextAnchor.MiddleCenter, Color = "1 1 1 0.5" }
-					}, parent
-				);
+				// create buttons
+
+				for (int i = 0; i < numofbuttons; i++) {
+
+					int ix = i % maxbuttonswrap;
+					int iy = i/maxbuttonswrap;
+
+
+					float posx = 0.5f + ((ix - (numofbuttons * 0.5f)) * ((buttonsize * aspect) + buttonspacing)) + buttonspacing * 0.5f;
+					float posy = 0.5f - (buttonsize * 0.5f) - (iy * ((buttonsize) + buttonspacing*2));
+
+					string button = elements.Add(
+						new CuiButton {
+							Button = { Command = "", Color = "0.251 0.769 1 0.1" },
+							RectTransform = { AnchorMin = $"{posx} {posy}", AnchorMax = $"{posx + (buttonsize * aspect)} {posy + (buttonsize)}" },
+							Text = { Text = "", FontSize = 12, Align = TextAnchor.MiddleCenter, Color = "1 1 1 0" }
+						}, parent
+					);
+
+					elements.Add(
+						CreateItemIcon(button, "0.05 0.05", "0.95 0.95", "https://i.imgur.com/R9mD3VQ.png", "1 1 1 1")
+					);
+
+					string buttontext = elements.Add(
+						new CuiPanel { // blue background
+							Image = { Color = "0.251 0.769 1 0.5" },
+							RectTransform = { AnchorMin = "0 -0.2", AnchorMax = "1 0" }
+						}, button
+					);
+
+					elements.Add(
+						new CuiLabel {
+							Text = { Text = "Assembler", FontSize = 16, Align = TextAnchor.MiddleCenter, Color = "1 1 1 1" },
+							RectTransform = { AnchorMin = "0 0", AnchorMax = "1 1" }
+						}, buttontext
+					);
+				}
 				
+
 				return parent;
 			}
 

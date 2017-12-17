@@ -75,13 +75,26 @@ namespace Oxide.Plugins.JTechCore {
 			}
 		};
 
+		public static void FakeDropShadow(CuiElementContainer elements, string parent = "Hud", float anchorMinx = 0, float anchorMiny = 0, float anchorMaxx = 1, float anchorMaxy = 1, float widthseparation = 0.025f, float heightseparation = 0.025f, int dist = 3, string color = "0.15 0.15 0.15 0.1") {
+
+			for (var i = 1; i <= dist; i++)
+				elements.Add(
+					new CuiPanel {
+						Image = { Color = color },
+						RectTransform = { AnchorMin = $"{anchorMinx - widthseparation * i} {anchorMiny - heightseparation * i}", AnchorMax = $"{anchorMaxx + widthseparation * i} {anchorMaxy + heightseparation * i}" }
+					}, parent
+				);
+		}
+		
+
 		public static class Menu {
 
 			public static string CreateOverlay(CuiElementContainer elements) {
 
 				float aspect = 0.5625f; // use this to scale width values for 1:1 aspect
 				
-				float buttonsize = 0.15f;
+				float buttonsize = 0.16f;
+				float buttonsizeaspect = buttonsize * aspect;
 				float buttonspacing = 0.04f * aspect;
 				int numofbuttons = 4;
 				int maxbuttonswrap = 8;
@@ -117,36 +130,93 @@ namespace Oxide.Plugins.JTechCore {
 
 					int ix = i % maxbuttonswrap;
 					int iy = i/maxbuttonswrap;
+					
+					float posx = 0.5f + ((ix - (numofbuttons * 0.5f)) * (buttonsizeaspect + buttonspacing)) + buttonspacing * 0.5f;
+					float posy = 0.55f - (buttonsize * 0.5f) - (iy * ((buttonsize) + buttonspacing*2));
 
-
-					float posx = 0.5f + ((ix - (numofbuttons * 0.5f)) * ((buttonsize * aspect) + buttonspacing)) + buttonspacing * 0.5f;
-					float posy = 0.5f - (buttonsize * 0.5f) - (iy * ((buttonsize) + buttonspacing*2));
+					FakeDropShadow(elements, parent, posx, posy - buttonsize*0.5f, posx + buttonsizeaspect, posy + (buttonsize), 0.005f*aspect, 0.005f, 1, "0.004 0.341 0.608 0.2");
 
 					string button = elements.Add(
 						new CuiButton {
-							Button = { Command = "", Color = "0.251 0.769 1 0.1" },
-							RectTransform = { AnchorMin = $"{posx} {posy}", AnchorMax = $"{posx + (buttonsize * aspect)} {posy + (buttonsize)}" },
+							Button = { Command = "", Color = "0.251 0.769 1 0.25" },
+							RectTransform = { AnchorMin = $"{posx} {posy - buttonsize * 0.5f}", AnchorMax = $"{posx + buttonsizeaspect} {posy + (buttonsize)}" },
 							Text = { Text = "", FontSize = 12, Align = TextAnchor.MiddleCenter, Color = "1 1 1 0" }
 						}, parent
 					);
 
 					elements.Add(
-						CreateItemIcon(button, "0.05 0.05", "0.95 0.95", "https://i.imgur.com/R9mD3VQ.png", "1 1 1 1")
+						CreateItemIcon(button, "0.05 0.383", "0.95 0.95", "https://i.imgur.com/R9mD3VQ.png", "1 1 1 1")
 					);
 
-					string buttontext = elements.Add(
-						new CuiPanel { // blue background
-							Image = { Color = "0.251 0.769 1 0.5" },
-							RectTransform = { AnchorMin = "0 -0.2", AnchorMax = "1 0" }
+					string buttonbottom = elements.Add(
+						new CuiPanel {
+							Image = { Color = "0 0 0 0" },
+							RectTransform = { AnchorMin = "0 0", AnchorMax = "1 0.3333" }
 						}, button
 					);
 
+					FakeDropShadow(elements, buttonbottom, 0, 0.6f, 1, 1f, 0, 0.02f, 2, "0.004 0.341 0.608 0.15");
+
+					string buttonlabel = elements.Add(
+						new CuiPanel {
+							Image = { Color = "0.251 0.769 1 0.9" },
+							RectTransform = { AnchorMin = "-0.031 0.6", AnchorMax = "1.0125 1" }
+						}, buttonbottom
+					);
+
 					elements.Add(
+						AddOutline(
 						new CuiLabel {
 							Text = { Text = "Assembler", FontSize = 16, Align = TextAnchor.MiddleCenter, Color = "1 1 1 1" },
 							RectTransform = { AnchorMin = "0 0", AnchorMax = "1 1" }
-						}, buttontext
+						}, buttonlabel, "0.004 0.341 0.608 0.3")
 					);
+
+					string materiallist = elements.Add(
+						new CuiPanel {
+							Image = { Color = "0 0 0 0" },
+							RectTransform = { AnchorMin = "0 0.05", AnchorMax = "1 0.45" }
+						}, buttonbottom
+					);
+
+
+					elements.Add(
+						CreateItemIcon(materiallist, "0.2 0", "0.4 1", "https://vignette.wikia.nocookie.net/play-rust/images/5/5c/Vending_Machine_icon.png", "1 1 1 1")
+					);
+					elements.Add(
+						AddOutline(
+							new CuiLabel {
+								Text = { Text = "", FontSize = 12, Align = TextAnchor.MiddleCenter, Color = "1 1 1 1" },
+								RectTransform = { AnchorMin = "0.2 0", AnchorMax = "0.4 1" }
+							}, materiallist, "0.15 0.15 0.15 1")
+					);
+
+					elements.Add(
+						CreateItemIcon(materiallist, "0.4 0", "0.6 1", "https://vignette.wikia.nocookie.net/play-rust/images/7/72/Gears_icon.png", "1 1 1 1")
+					);
+					elements.Add(
+						AddOutline(
+							new CuiLabel {
+								Text = { Text = "5", FontSize = 12, Align = TextAnchor.MiddleCenter, Color = "1 1 1 1" },
+								RectTransform = { AnchorMin = "0.4 0", AnchorMax = "0.6 1" }
+							}, materiallist, "0.15 0.15 0.15 1")
+					);
+
+					elements.Add(
+						CreateItemIcon(materiallist, "0.6 0", "0.8 1", "https://vignette.wikia.nocookie.net/play-rust/images/a/a1/High_Quality_Metal_icon.png", "1 1 1 1")
+					);
+					elements.Add(
+						AddOutline(
+							new CuiLabel {
+								Text = { Text = "20", FontSize = 12, Align = TextAnchor.MiddleCenter, Color = "1 1 1 1" },
+								RectTransform = { AnchorMin = "0.6 0", AnchorMax = "0.8 1" }
+							}, materiallist, "0.15 0.15 0.15 1")
+					);
+
+
+
+
+
 				}
 				
 

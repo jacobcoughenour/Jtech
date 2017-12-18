@@ -1,7 +1,31 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+	<Choose>
+		<!--if it's an extension, put it in the include folder-->
+		<When Condition="$(MSBuildProjectName.StartsWith('Ext.'))">
+			<PropertyGroup>
+				<OutputPath>$(SolutionDir)build\include\$(MSBuildProjectName).cs</OutputPath>
+				<ServerOutputDir>$(RustServerDir)\oxide\plugins\include</ServerOutputDir>
+			</PropertyGroup>
+		</When>
+		<Otherwise>
+			<PropertyGroup>
+				<OutputPath>$(SolutionDir)build\$(MSBuildProjectName).cs</OutputPath>
+				<ServerOutputDir>$(RustServerDir)\oxide\plugins</ServerOutputDir>
+			</PropertyGroup>
+		</Otherwise>
+	</Choose>
+	
 	<Target Name="Build">
-		<Exec Command="$(SolutionDir)PluginMerger\PluginMerger\bin\Debug\PluginMerger.exe $(MSBuildProjectDirectory) $(SolutionDir)build\$(MSBuildProjectName).cs"/>
-		<Copy SourceFiles="$(SolutionDir)build\$(MSBuildProjectName).cs" DestinationFolder="$(RustServerDir)\oxide\plugins" />
+
+		
+
+		<!-- Run PluginMerger -->
+		<Exec Command="$(SolutionDir)PluginMerger\PluginMerger\bin\Debug\PluginMerger.exe $(MSBuildProjectDirectory) $(OutputPath)"/>
+		
+		<!-- Copy to server-->
+		<Copy SourceFiles="$(OutputPath)" DestinationFolder="$(ServerOutputDir)"/>
+		
 	</Target>
 </Project>

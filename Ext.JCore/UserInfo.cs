@@ -4,9 +4,9 @@ using System.Collections.Generic;
 using UnityEngine;
 using Oxide.Game.Rust.Cui;
 
-namespace Oxide.Plugins.JTechCore {
+namespace Oxide.Ext.JCore {
 
-	class UserInfo : MonoBehaviour {
+	public class UserInfo : MonoBehaviour {
 
 		public BasePlayer player;
 		public InputState input;

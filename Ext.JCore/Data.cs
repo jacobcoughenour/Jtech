@@ -2,7 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 
-namespace Oxide.Plugins.JTechCore {
+namespace Oxide.Ext.JCore {
 
 	public static class Data {
 

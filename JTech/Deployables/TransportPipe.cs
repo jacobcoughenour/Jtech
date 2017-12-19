@@ -10,9 +10,11 @@ using Oxide.Plugins.JCore;
 namespace Oxide.Plugins.JTechDeployables {
 
 	[JInfo(typeof(JTech), "Transport Pipe", "https://i.imgur.com/R9mD3VQ.png")]
+	[JRequirement("metal.fragments", 20)]
 	public class TransportPipe : JDeployable {
-
-
+	
+		
 
 	}
+
 }

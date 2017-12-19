@@ -236,11 +236,13 @@
     </BootstrapperPackage>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Core\Attributes\JInfoAttribute.cs" />
+    <Compile Include="Core\Attributes\JRequirementAttribute.cs" />
+    <Compile Include="Core\Util\Icons.cs" />
     <Compile Include="Core\Cui.cs" />
     <Compile Include="Core\Data.cs" />
     <Compile Include="Core\JDeployable.cs" />
     <Compile Include="Core\JDeployableManager.cs" />
-    <Compile Include="Core\JInfoAttribute.cs" />
     <Compile Include="Core\UserInfo.cs" />
     <Compile Include="Deployables\Assembler.cs" />
     <Compile Include="Deployables\TransportPipe.cs" />

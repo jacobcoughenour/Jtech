@@ -1,6 +1,7 @@
 ﻿using System;
 using Oxide.Core;
 using Oxide.Plugins;
+using System.Collections.Generic;
 
 namespace Oxide.Plugins.JCore {
 

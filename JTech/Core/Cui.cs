@@ -92,15 +92,14 @@ namespace Oxide.Plugins.JCore {
 
 			public static string CreateOverlay(CuiElementContainer elements) {
 
-				// Get registered deployable info
-				List<JInfoAttribute> infos = JDeployableManager.DeployableTypes.Values.ToList<JInfoAttribute>();
+				List<Type> registeredDeployables = JDeployableManager.DeployableTypes.Keys.ToList<Type>();
 
 				float aspect = 0.5625f; // use this to scale width values for 1:1 aspect
 				
 				float buttonsize = 0.16f;
 				float buttonsizeaspect = buttonsize * aspect;
 				float buttonspacing = 0.04f * aspect;
-				int numofbuttons = infos.Count;
+				int numofbuttons = registeredDeployables.Count;
 				int maxbuttonswrap = 8;
 
 				string parent = elements.Add(
@@ -132,7 +131,11 @@ namespace Oxide.Plugins.JCore {
 				// create buttons
 				for (int i = 0; i < numofbuttons; i++) {
 
-					JInfoAttribute currentinfo = infos[i];
+					Type currenttype = registeredDeployables[i];
+					JInfoAttribute info;
+					JDeployableManager.DeployableTypes.TryGetValue(currenttype, out info);
+					List<JRequirementAttribute> requirements;
+					JDeployableManager.DeployableTypeRequirements.TryGetValue(currenttype, out requirements);
 
 					int ix = i % maxbuttonswrap;
 					int iy = i/maxbuttonswrap;
@@ -151,7 +154,7 @@ namespace Oxide.Plugins.JCore {
 					);
 
 					elements.Add(
-						CreateItemIcon(button, "0.05 0.383", "0.95 0.95", currentinfo.IconUrl, "1 1 1 1")
+						CreateItemIcon(button, "0.05 0.383", "0.95 0.95", info.IconUrl, "1 1 1 1")
 					);
 
 					string buttonbottom = elements.Add(
@@ -173,7 +176,7 @@ namespace Oxide.Plugins.JCore {
 					elements.Add(
 						AddOutline(
 						new CuiLabel {
-							Text = { Text = currentinfo.Name, FontSize = 16, Align = TextAnchor.MiddleCenter, Color = "1 1 1 1" },
+							Text = { Text = info.Name, FontSize = 16, Align = TextAnchor.MiddleCenter, Color = "1 1 1 1" },
 							RectTransform = { AnchorMin = "0 0", AnchorMax = "1 1" }
 						}, buttonlabel, "0.004 0.341 0.608 0.3")
 					);
@@ -181,43 +184,34 @@ namespace Oxide.Plugins.JCore {
 					string materiallist = elements.Add(
 						new CuiPanel {
 							Image = { Color = "0 0 0 0" },
-							RectTransform = { AnchorMin = "0 0.05", AnchorMax = "1 0.45" }
+							RectTransform = { AnchorMin = "0 0.1", AnchorMax = "0.9815 0.45" }
 						}, buttonbottom
 					);
 
 
-					elements.Add(
-						CreateItemIcon(materiallist, "0.2 0", "0.4 1", "https://vignette.wikia.nocookie.net/play-rust/images/5/5c/Vending_Machine_icon.png", "1 1 1 1")
-					);
-					elements.Add(
-						AddOutline(
-							new CuiLabel {
-								Text = { Text = "", FontSize = 12, Align = TextAnchor.MiddleCenter, Color = "1 1 1 1" },
-								RectTransform = { AnchorMin = "0.2 0", AnchorMax = "0.4 1" }
-							}, materiallist, "0.15 0.15 0.15 1")
-					);
+					int numofrequirements = requirements.Count;
+					for (int r = 0; r < numofrequirements; r++) {
 
-					elements.Add(
-						CreateItemIcon(materiallist, "0.4 0", "0.6 1", "https://vignette.wikia.nocookie.net/play-rust/images/7/72/Gears_icon.png", "1 1 1 1")
-					);
-					elements.Add(
-						AddOutline(
-							new CuiLabel {
-								Text = { Text = "5", FontSize = 12, Align = TextAnchor.MiddleCenter, Color = "1 1 1 1" },
-								RectTransform = { AnchorMin = "0.4 0", AnchorMax = "0.6 1" }
-							}, materiallist, "0.15 0.15 0.15 1")
-					);
+						float pos = 0.6f - (numofrequirements*0.1f) + r*(0.2f);
+						string min = $"{pos - 0.1f} 0";
+						string max = $"{pos + 0.1f} 1";
 
-					elements.Add(
-						CreateItemIcon(materiallist, "0.6 0", "0.8 1", "https://vignette.wikia.nocookie.net/play-rust/images/a/a1/High_Quality_Metal_icon.png", "1 1 1 1")
-					);
-					elements.Add(
-						AddOutline(
-							new CuiLabel {
-								Text = { Text = "20", FontSize = 12, Align = TextAnchor.MiddleCenter, Color = "1 1 1 1" },
-								RectTransform = { AnchorMin = "0.6 0", AnchorMax = "0.8 1" }
-							}, materiallist, "0.15 0.15 0.15 1")
-					);
+						JRequirementAttribute cur = requirements[r];
+
+						elements.Add(
+							CreateItemIcon(materiallist, min, max, Util.Icons.GetItemIconURL(cur.ItemShortName, 64), "1 1 1 1")
+						);
+						
+						if (cur.ItemAmount > 1) {
+							elements.Add(
+								AddOutline(
+									new CuiLabel {
+										Text = { Text = $"{cur.ItemAmount}", FontSize = 12, Align = TextAnchor.MiddleCenter, Color = "1 1 1 1" },
+										RectTransform = { AnchorMin = min, AnchorMax = max }
+									}, materiallist, "0.15 0.15 0.15 1")
+							);
+						}
+					}
 
 				}
 				

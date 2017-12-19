@@ -20,7 +20,7 @@ namespace Oxide.Plugins {
 		#region Oxide Hooks
 
 		void Init() {
-			
+
 			// TODO
 			// register lang messages
 			// load config
@@ -30,7 +30,6 @@ namespace Oxide.Plugins {
 				foreach (var player in BasePlayer.activePlayerList)
 					UserInfo.Get(player);
 			});
-
 		}
 		
 		void OnServerInitialized() {
@@ -225,15 +224,14 @@ namespace Oxide.Plugins.JCore {
 
 			public static string CreateOverlay(CuiElementContainer elements) {
 
-				// Get registered deployable info
-				List<JInfoAttribute> infos = JDeployableManager.DeployableTypes.Values.ToList<JInfoAttribute>();
+				List<Type> registeredDeployables = JDeployableManager.DeployableTypes.Keys.ToList<Type>();
 
 				float aspect = 0.5625f; // use this to scale width values for 1:1 aspect
 				
 				float buttonsize = 0.16f;
 				float buttonsizeaspect = buttonsize * aspect;
 				float buttonspacing = 0.04f * aspect;
-				int numofbuttons = infos.Count;
+				int numofbuttons = registeredDeployables.Count;
 				int maxbuttonswrap = 8;
 
 				string parent = elements.Add(
@@ -265,7 +263,11 @@ namespace Oxide.Plugins.JCore {
 				// create buttons
 				for (int i = 0; i < numofbuttons; i++) {
 
-					JInfoAttribute currentinfo = infos[i];
+					Type currenttype = registeredDeployables[i];
+					JInfoAttribute info;
+					JDeployableManager.DeployableTypes.TryGetValue(currenttype, out info);
+					List<JRequirementAttribute> requirements;
+					JDeployableManager.DeployableTypeRequirements.TryGetValue(currenttype, out requirements);
 
 					int ix = i % maxbuttonswrap;
 					int iy = i/maxbuttonswrap;
@@ -284,7 +286,7 @@ namespace Oxide.Plugins.JCore {
 					);
 
 					elements.Add(
-						CreateItemIcon(button, "0.05 0.383", "0.95 0.95", currentinfo.IconUrl, "1 1 1 1")
+						CreateItemIcon(button, "0.05 0.383", "0.95 0.95", info.IconUrl, "1 1 1 1")
 					);
 
 					string buttonbottom = elements.Add(
@@ -306,7 +308,7 @@ namespace Oxide.Plugins.JCore {
 					elements.Add(
 						AddOutline(
 						new CuiLabel {
-							Text = { Text = currentinfo.Name, FontSize = 16, Align = TextAnchor.MiddleCenter, Color = "1 1 1 1" },
+							Text = { Text = info.Name, FontSize = 16, Align = TextAnchor.MiddleCenter, Color = "1 1 1 1" },
 							RectTransform = { AnchorMin = "0 0", AnchorMax = "1 1" }
 						}, buttonlabel, "0.004 0.341 0.608 0.3")
 					);
@@ -314,43 +316,34 @@ namespace Oxide.Plugins.JCore {
 					string materiallist = elements.Add(
 						new CuiPanel {
 							Image = { Color = "0 0 0 0" },
-							RectTransform = { AnchorMin = "0 0.05", AnchorMax = "1 0.45" }
+							RectTransform = { AnchorMin = "0 0.1", AnchorMax = "0.9815 0.45" }
 						}, buttonbottom
 					);
 
 
-					elements.Add(
-						CreateItemIcon(materiallist, "0.2 0", "0.4 1", "https://vignette.wikia.nocookie.net/play-rust/images/5/5c/Vending_Machine_icon.png", "1 1 1 1")
-					);
-					elements.Add(
-						AddOutline(
-							new CuiLabel {
-								Text = { Text = "", FontSize = 12, Align = TextAnchor.MiddleCenter, Color = "1 1 1 1" },
-								RectTransform = { AnchorMin = "0.2 0", AnchorMax = "0.4 1" }
-							}, materiallist, "0.15 0.15 0.15 1")
-					);
+					int numofrequirements = requirements.Count;
+					for (int r = 0; r < numofrequirements; r++) {
 
-					elements.Add(
-						CreateItemIcon(materiallist, "0.4 0", "0.6 1", "https://vignette.wikia.nocookie.net/play-rust/images/7/72/Gears_icon.png", "1 1 1 1")
-					);
-					elements.Add(
-						AddOutline(
-							new CuiLabel {
-								Text = { Text = "5", FontSize = 12, Align = TextAnchor.MiddleCenter, Color = "1 1 1 1" },
-								RectTransform = { AnchorMin = "0.4 0", AnchorMax = "0.6 1" }
-							}, materiallist, "0.15 0.15 0.15 1")
-					);
+						float pos = 0.6f - (numofrequirements*0.1f) + r*(0.2f);
+						string min = $"{pos - 0.1f} 0";
+						string max = $"{pos + 0.1f} 1";
 
-					elements.Add(
-						CreateItemIcon(materiallist, "0.6 0", "0.8 1", "https://vignette.wikia.nocookie.net/play-rust/images/a/a1/High_Quality_Metal_icon.png", "1 1 1 1")
-					);
-					elements.Add(
-						AddOutline(
-							new CuiLabel {
-								Text = { Text = "20", FontSize = 12, Align = TextAnchor.MiddleCenter, Color = "1 1 1 1" },
-								RectTransform = { AnchorMin = "0.6 0", AnchorMax = "0.8 1" }
-							}, materiallist, "0.15 0.15 0.15 1")
-					);
+						JRequirementAttribute cur = requirements[r];
+
+						elements.Add(
+							CreateItemIcon(materiallist, min, max, Util.Icons.GetItemIconURL(cur.ItemShortName, 64), "1 1 1 1")
+						);
+						
+						if (cur.ItemAmount > 1) {
+							elements.Add(
+								AddOutline(
+									new CuiLabel {
+										Text = { Text = $"{cur.ItemAmount}", FontSize = 12, Align = TextAnchor.MiddleCenter, Color = "1 1 1 1" },
+										RectTransform = { AnchorMin = min, AnchorMax = max }
+									}, materiallist, "0.15 0.15 0.15 1")
+							);
+						}
+					}
 
 				}
 				
@@ -384,6 +377,8 @@ namespace Oxide.Plugins.JCore {
 
 	public class JDeployable {
 
+		public List<ItemAmount> ingredients = new List<ItemAmount>(){};
+
 		// TODO
 		// handle entity hooks (health, damage, repair)
 		// owner, parent
@@ -393,8 +388,6 @@ namespace Oxide.Plugins.JCore {
 
 
 		public JDeployable() { }
-		
-
 	}
 
 }
@@ -404,7 +397,8 @@ namespace Oxide.Plugins.JCore {
 	public class JDeployableManager {
 
 		public static Dictionary<Type, JInfoAttribute> DeployableTypes = new Dictionary<Type, JInfoAttribute>();
-		
+		public static Dictionary<Type, List<JRequirementAttribute>> DeployableTypeRequirements = new Dictionary<Type, List<JRequirementAttribute>>();
+
 		/// <summary>
 		/// JDeployable API
 		/// Registers JDeployable to the JDeployableManager
@@ -415,14 +409,18 @@ namespace Oxide.Plugins.JCore {
 			// get info attribute
 			JInfoAttribute info = (JInfoAttribute) System.Attribute.GetCustomAttribute(typeof(T), typeof(JInfoAttribute));
 
-			if (info != null) {
+			// get requirements attributes
+			List<JRequirementAttribute> requirements = System.Attribute.GetCustomAttributes(typeof(T), typeof(JRequirementAttribute)).OfType<JRequirementAttribute>().ToList();
+
+			if (info != null && requirements.Count > 0) {
 				if (!DeployableTypes.ContainsKey(typeof(T))) {
 					DeployableTypes.Add(typeof(T), info);
+					DeployableTypeRequirements.Add(typeof(T), requirements);
 					Interface.Oxide.LogInfo($"[JCore] Registered Deployable: [{info.PluginInfo.Title}] {info.Name}");
 				} else
 					Interface.Oxide.LogWarning($"[JCore] ([{info.PluginInfo.Title}] {info.Name}) has already been registered!");
 			} else
-				Interface.Oxide.LogWarning($"[JCore] Failed to register ({typeof(T)}) for Missing JInfo Attribute");
+				Interface.Oxide.LogWarning($"[JCore] Failed to register ({typeof(T)}) for Missing Attribute");
 		}
 
 		/// <summary>
@@ -435,7 +433,7 @@ namespace Oxide.Plugins.JCore {
 			// get info attribute
 			JInfoAttribute info = (JInfoAttribute) System.Attribute.GetCustomAttribute(typeof(T), typeof(JInfoAttribute));
 
-			if (DeployableTypes.Remove(typeof(T))) {
+			if (DeployableTypes.Remove(typeof(T)) && DeployableTypeRequirements.Remove(typeof(T))) {
 				Interface.Oxide.LogInfo($"[JCore] Unregistered Deployable: [{info.PluginInfo.Title}] {info.Name}");
 			} else {
 				Interface.Oxide.LogInfo($"[JCore] Failed to Unregistered Deployable: [{info.PluginInfo.Title}] {info.Name}");
@@ -453,29 +451,6 @@ namespace Oxide.Plugins.JCore {
 
 
 
-	}
-}
-
-namespace Oxide.Plugins.JCore {
-
-	[AttributeUsage(AttributeTargets.Class)]
-	public class JInfoAttribute : Attribute {
-
-		public InfoAttribute PluginInfo { get; }
-		public string Name { get; }
-		public string IconUrl { get; }
-
-		/// <summary>
-		/// Info about this Custom JDeployable
-		/// </summary>
-		/// <param name="pluginType">typeof(yourplugin)</param>
-		/// <param name="name">Name shown in menus and commands.</param>
-		/// <param name="iconUrl">Url for the icon shown in menus. Make it 200x200 with a transparent background.</param>
-		public JInfoAttribute(Type pluginType, string name, string iconUrl) {
-			this.PluginInfo = (InfoAttribute) GetCustomAttribute(pluginType, typeof(InfoAttribute));
-			this.Name = name;
-			this.IconUrl = iconUrl;
-		}
 	}
 }
 
@@ -583,9 +558,125 @@ namespace Oxide.Plugins.JCore {
 
 }
 
+namespace Oxide.Plugins.JCore {
+
+	[AttributeUsage(AttributeTargets.Class)]
+	public class JInfoAttribute : Attribute {
+
+		public InfoAttribute PluginInfo { get; }
+		public string Name { get; }
+		public string IconUrl { get; }
+
+		/// <summary>
+		/// Info about this Custom JDeployable
+		/// </summary>
+		/// <param name="pluginType">typeof(yourplugin)</param>
+		/// <param name="name">Name shown in menus and commands.</param>
+		/// <param name="iconUrl">Url for the icon shown in menus. Make it 200x200 with a transparent background.</param>
+		public JInfoAttribute(Type pluginType, string name, string iconUrl) {
+			this.PluginInfo = (InfoAttribute) GetCustomAttribute(pluginType, typeof(InfoAttribute));
+			this.Name = name;
+			this.IconUrl = iconUrl;
+		}
+	}
+}
+
+namespace Oxide.Plugins.JCore {
+
+	[AttributeUsage(AttributeTargets.Class, AllowMultiple = true)]
+	public class JRequirementAttribute : Attribute {
+		
+		public string ItemShortName { get; }
+		public int ItemAmount { get; }
+		
+		/// <summary>
+		/// Required Item and amount for placing deployable
+		/// </summary>
+		/// <param name="itemshortname">Shortname of item definition.  Check out the Oxide docs for a list of shortnames.</param>
+		/// <param name="itemamount">Amount required for the item</param>
+		public JRequirementAttribute(string itemshortname, int itemamount = 1) {
+			this.ItemShortName = itemshortname;
+			this.ItemAmount = itemamount;
+		}
+	}
+}
+
+namespace Oxide.Plugins.JCore.Util {
+
+	public static class Icons {
+
+		private readonly static Dictionary<string, string> ItemUrls = new Dictionary<string, string>() {
+			{ "autoturret", "http://vignette2.wikia.nocookie.net/play-rust/images/f/f9/Auto_Turret_icon.png/revision/latest/scale-to-width-down/{0}" },
+			{ "bbq", "http://i.imgur.com/DfCm0EJ.png" },
+			{ "box.repair.bench", "http://vignette1.wikia.nocookie.net/play-rust/images/3/3b/Repair_Bench_icon.png/revision/latest/scale-to-width-down/{0}" },
+
+
+
+
+			{ "vending.machine", "http://vignette2.wikia.nocookie.net/play-rust/images/5/5c/Vending_Machine_icon.png/revision/latest/scale-to-width-down/{0}" },
+
+
+			{ "Small_Stocking", "http://vignette2.wikia.nocookie.net/play-rust/images/9/97/Small_Stocking_icon.png/revision/latest/scale-to-width-down/{0}" },
+			{ "SUPER_Stocking", "http://vignette1.wikia.nocookie.net/play-rust/images/6/6a/SUPER_Stocking_icon.png/revision/latest/scale-to-width-down/{0}" },
+			{ "Small_Present", "http://vignette2.wikia.nocookie.net/play-rust/images/d/da/Small_Present_icon.png/revision/latest/scale-to-width-down/{0}" },
+			{ "Medium_Present", "http://vignette3.wikia.nocookie.net/play-rust/images/6/6b/Medium_Present_icon.png/revision/latest/scale-to-width-down/{0}" },
+			{ "Large_Present", "http://vignette1.wikia.nocookie.net/play-rust/images/9/99/Large_Present_icon.png/revision/latest/scale-to-width-down/{0}" },
+			{ "Pump_Jack", "http://vignette2.wikia.nocookie.net/play-rust/images/c/c9/Pump_Jack_icon.png/revision/latest/scale-to-width-down/{0}" },
+			{ "Shop_Front", "http://vignette4.wikia.nocookie.net/play-rust/images/c/c1/Shop_Front_icon.png/revision/latest/scale-to-width-down/{0}" },
+			{ "Water_Purifier", "http://vignette3.wikia.nocookie.net/play-rust/images/6/6e/Water_Purifier_icon.png/revision/latest/scale-to-width-down/{0}" },
+			{ "Water_Barrel", "http://vignette4.wikia.nocookie.net/play-rust/images/e/e2/Water_Barrel_icon.png/revision/latest/scale-to-width-down/{0}" },
+			{ "Survival_Fish_Trap", "http://vignette2.wikia.nocookie.net/play-rust/images/9/9d/Survival_Fish_Trap_icon.png/revision/latest/scale-to-width-down/{0}" },
+			{ "Research_Table", "http://vignette2.wikia.nocookie.net/play-rust/images/2/21/Research_Table_icon.png/revision/latest/scale-to-width-down/{0}" },
+			{ "Small_Planter_Box", "http://vignette3.wikia.nocookie.net/play-rust/images/a/a7/Small_Planter_Box_icon.png/revision/latest/scale-to-width-down/{0}" },
+			{ "Large_Planter_Box", "http://vignette1.wikia.nocookie.net/play-rust/images/3/35/Large_Planter_Box_icon.png/revision/latest/scale-to-width-down/{0}" },
+			{ "Jack_O_Lantern_Happy", "http://vignette1.wikia.nocookie.net/play-rust/images/9/92/Jack_O_Lantern_Happy_icon.png/revision/latest/scale-to-width-down/{0}" },
+			{ "Jack_O_Lantern_Angry", "http://vignette4.wikia.nocookie.net/play-rust/images/9/96/Jack_O_Lantern_Angry_icon.png/revision/latest/scale-to-width-down/{0}" },
+			{ "Large_Furnace", "http://vignette3.wikia.nocookie.net/play-rust/images/e/ee/Large_Furnace_icon.png/revision/latest/scale-to-width-down/{0}" },
+			{ "Ceiling_Light", "http://vignette3.wikia.nocookie.net/play-rust/images/4/43/Ceiling_Light_icon.png/revision/latest/scale-to-width-down/{0}" },
+			{ "Hammer", "http://vignette4.wikia.nocookie.net/play-rust/images/5/57/Hammer_icon.png/revision/latest/scale-to-width-down/{0}" },
+			{ "Camp_Fire", "http://vignette4.wikia.nocookie.net/play-rust/images/3/35/Camp_Fire_icon.png/revision/latest/scale-to-width-down/{0}" },	
+			{ "Furnace", "http://vignette4.wikia.nocookie.net/play-rust/images/e/e3/Furnace_icon.png/revision/latest/scale-to-width-down/{0}" },
+			{ "Lantern", "http://vignette4.wikia.nocookie.net/play-rust/images/4/46/Lantern_icon.png/revision/latest/scale-to-width-down/{0}" },
+			{ "Large_Water_Catcher", "http://vignette2.wikia.nocookie.net/play-rust/images/3/35/Large_Water_Catcher_icon.png/revision/latest/scale-to-width-down/{0}" },
+			{ "Large_Wood_Box", "http://vignette1.wikia.nocookie.net/play-rust/images/b/b2/Large_Wood_Box_icon.png/revision/latest/scale-to-width-down/{0}" },
+			{ "Mining_Quarry", "http://vignette1.wikia.nocookie.net/play-rust/images/b/b8/Mining_Quarry_icon.png/revision/latest/scale-to-width-down/{0}" },
+			
+			{ "Small_Oil_Refinery", "http://vignette2.wikia.nocookie.net/play-rust/images/a/ac/Small_Oil_Refinery_icon.png/revision/latest/scale-to-width-down/{0}" },
+			{ "Small_Stash", "http://vignette2.wikia.nocookie.net/play-rust/images/5/53/Small_Stash_icon.png/revision/latest/scale-to-width-down/{0}" },
+			{ "Small_Water_Catcher", "http://vignette2.wikia.nocookie.net/play-rust/images/0/04/Small_Water_Catcher_icon.png/revision/latest/scale-to-width-down/{0}" },
+			{ "Search_Light", "http://vignette2.wikia.nocookie.net/play-rust/images/c/c6/Search_Light_icon.png/revision/latest/scale-to-width-down/{0}" },
+			{ "Wood_Storage_Box", "http://vignette2.wikia.nocookie.net/play-rust/images/f/ff/Wood_Storage_Box_icon.png/revision/latest/scale-to-width-down/{0}" },
+			{ "Drop_Box", "http://vignette2.wikia.nocookie.net/play-rust/images/4/46/Drop_Box_icon.png/revision/latest/scale-to-width-down/{0}" },
+			{ "Fridge", "http://vignette2.wikia.nocookie.net/play-rust/images/8/88/Fridge_icon.png/revision/latest/scale-to-width-down/{0}" },
+			{ "Shotgun_Trap", "http://vignette2.wikia.nocookie.net/play-rust/images/6/6c/Shotgun_Trap_icon.png/revision/latest/scale-to-width-down/{0}" },
+			{ "Flame_Turret", "http://vignette2.wikia.nocookie.net/play-rust/images/f/f9/Flame_Turret_icon.png/revision/latest/scale-to-width-down/{0}" },
+			{ "Recycler", "http://vignette2.wikia.nocookie.net/play-rust/images/e/ef/Recycler_icon.png/revision/latest/scale-to-width-down/{0}" },
+			{ "Tool_Cupboard", "http://vignette2.wikia.nocookie.net/play-rust/images/5/57/Tool_Cupboard_icon.png/revision/latest/scale-to-width-down/{0}" }
+		};
+
+
+		public static string GetItemIconURL(string name, int size) {
+			string url;
+			if (ItemUrls.TryGetValue(name, out url)) {
+				return string.Format(url, size);
+			}
+			return string.Empty;
+		}
+
+
+	}
+
+}
+
 namespace Oxide.Plugins.JTechDeployables {
 
 	[JInfo(typeof(JTech), "Assembler", "https://i.imgur.com/R9mD3VQ.png")]
+	[JRequirement("bbq", 5)]
+	[JRequirement("bbq", 5)]
+	[JRequirement("bbq", 5)]
+	[JRequirement("bbq", 5)]
+	[JRequirement("bbq", 5)]
+
 	public class Assembler : JDeployable {
 
 
@@ -596,9 +687,11 @@ namespace Oxide.Plugins.JTechDeployables {
 namespace Oxide.Plugins.JTechDeployables {
 
 	[JInfo(typeof(JTech), "Transport Pipe", "https://i.imgur.com/R9mD3VQ.png")]
+	[JRequirement("metal.fragments", 20)]
 	public class TransportPipe : JDeployable {
-
-
+	
+		
 
 	}
+
 }

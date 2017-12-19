@@ -17,7 +17,7 @@ namespace Oxide.Plugins {
 		#region Oxide Hooks
 
 		void Init() {
-			
+
 			// TODO
 			// register lang messages
 			// load config
@@ -27,7 +27,6 @@ namespace Oxide.Plugins {
 				foreach (var player in BasePlayer.activePlayerList)
 					UserInfo.Get(player);
 			});
-
 		}
 		
 		void OnServerInitialized() {

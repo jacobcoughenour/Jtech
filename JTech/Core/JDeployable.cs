@@ -3,7 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace Oxide.Ext.JCore {
+namespace Oxide.Plugins.JCore {
 
 	public class JDeployable {
 

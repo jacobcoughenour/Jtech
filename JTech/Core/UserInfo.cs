@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using Oxide.Game.Rust.Cui;
 
-namespace Oxide.Ext.JCore {
+namespace Oxide.Plugins.JCore {
 
 	public class UserInfo : MonoBehaviour {
 

@@ -2,7 +2,7 @@
 using Oxide.Core;
 using Oxide.Plugins;
 
-namespace Oxide.Ext.JCore {
+namespace Oxide.Plugins.JCore {
 
 	[AttributeUsage(AttributeTargets.Class)]
 	public class JInfoAttribute : Attribute {

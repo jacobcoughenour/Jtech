@@ -247,7 +247,7 @@ namespace Oxide.Plugins.JCore {
 						new CuiLabel {
 							Text = { Text = "Choose a Deployable", FontSize = 22, Align = TextAnchor.MiddleCenter, Color = "1 1 1 1" },
 							RectTransform = { AnchorMin = "0 0.5", AnchorMax = "1 1" }
-						}, parent)
+						}, parent, "0.004 0.341 0.608 0.6")
 				);
 
 				// close overlay if you click the background
@@ -275,8 +275,10 @@ namespace Oxide.Plugins.JCore {
 					float posx = 0.5f + ((ix - (numofbuttons * 0.5f)) * (buttonsizeaspect + buttonspacing)) + buttonspacing * 0.5f;
 					float posy = 0.55f - (buttonsize * 0.5f) - (iy * ((buttonsize) + buttonspacing*2));
 
+					// slight outline around the button
 					FakeDropShadow(elements, parent, posx, posy - buttonsize*0.5f, posx + buttonsizeaspect, posy + (buttonsize), 0.005f*aspect, 0.005f, 1, "0.004 0.341 0.608 0.1");
 
+					// main button
 					string button = elements.Add(
 						new CuiButton {
 							Button = { Command = "", Color = "0.251 0.769 1 0.25" },
@@ -285,10 +287,12 @@ namespace Oxide.Plugins.JCore {
 						}, parent
 					);
 
+					// deployable icon
 					elements.Add(
 						CreateItemIcon(button, "0.05 0.383", "0.95 0.95", info.IconUrl, "1 1 1 1")
 					);
 
+					// button bottom area
 					string buttonbottom = elements.Add(
 						new CuiPanel {
 							Image = { Color = "0 0 0 0" },
@@ -296,8 +300,10 @@ namespace Oxide.Plugins.JCore {
 						}, button
 					);
 
+					// deployable name label shadow
 					FakeDropShadow(elements, buttonbottom, 0, 0.6f, 1, 1f, 0, 0.02f, 2, "0.004 0.341 0.608 0.15");
 
+					// deployable name label
 					string buttonlabel = elements.Add(
 						new CuiPanel {
 							Image = { Color = "0.251 0.769 1 0.9" },
@@ -305,6 +311,7 @@ namespace Oxide.Plugins.JCore {
 						}, buttonbottom
 					);
 
+					// deployable name label text
 					elements.Add(
 						AddOutline(
 						new CuiLabel {
@@ -313,6 +320,7 @@ namespace Oxide.Plugins.JCore {
 						}, buttonlabel, "0.004 0.341 0.608 0.3")
 					);
 
+					// item requirements area
 					string materiallist = elements.Add(
 						new CuiPanel {
 							Image = { Color = "0 0 0 0" },
@@ -321,26 +329,41 @@ namespace Oxide.Plugins.JCore {
 					);
 
 
+					// item requirements
+
 					int numofrequirements = requirements.Count;
 					for (int r = 0; r < numofrequirements; r++) {
 
-						float pos = 0.6f - (numofrequirements*0.1f) + r*(0.2f);
-						string min = $"{pos - 0.1f} 0";
-						string max = $"{pos + 0.1f} 1";
-
 						JRequirementAttribute cur = requirements[r];
 
+						float pos = 0.6f - (numofrequirements*0.1f) + r*(0.2f) - (cur.PerUnit != string.Empty ? cur.PerUnit.Length*0.026f + 0.09f : 0);
+						string min = $"{pos - 0.1f} 0";
+						string max = $"{pos + 0.1f} 1";
+						
+						// item icon
 						elements.Add(
 							CreateItemIcon(materiallist, min, max, Util.Icons.GetItemIconURL(cur.ItemShortName, 64), "1 1 1 1")
 						);
 						
+						// item amount
 						if (cur.ItemAmount > 1) {
 							elements.Add(
 								AddOutline(
-									new CuiLabel {
-										Text = { Text = $"{cur.ItemAmount}", FontSize = 12, Align = TextAnchor.MiddleCenter, Color = "1 1 1 1" },
-										RectTransform = { AnchorMin = min, AnchorMax = max }
-									}, materiallist, "0.15 0.15 0.15 1")
+								new CuiLabel {
+									Text = { Text = $"{cur.ItemAmount}", FontSize = 12, Align = TextAnchor.MiddleCenter, Color = "1 1 1 1" },
+									RectTransform = { AnchorMin = min, AnchorMax = max }
+								}, materiallist, "0.004 0.341 0.608 0.3")
+							);
+						}
+
+						// per unit
+						if (cur.PerUnit != string.Empty) {
+							elements.Add(
+								AddOutline(
+								new CuiLabel {
+									Text = { Text = $"per {cur.PerUnit}", FontSize = 12, Align = TextAnchor.MiddleLeft, Color = "1 1 1 1" },
+									RectTransform = { AnchorMin = $"{pos + 0.135f} 0", AnchorMax = $"{pos + 1.0f} 1" }
+								}, materiallist, "0.004 0.341 0.608 0.3")
 							);
 						}
 					}
@@ -377,8 +400,6 @@ namespace Oxide.Plugins.JCore {
 
 	public class JDeployable {
 
-		public List<ItemAmount> ingredients = new List<ItemAmount>(){};
-
 		// TODO
 		// handle entity hooks (health, damage, repair)
 		// owner, parent
@@ -388,6 +409,7 @@ namespace Oxide.Plugins.JCore {
 
 
 		public JDeployable() { }
+		
 	}
 
 }
@@ -409,18 +431,31 @@ namespace Oxide.Plugins.JCore {
 			// get info attribute
 			JInfoAttribute info = (JInfoAttribute) System.Attribute.GetCustomAttribute(typeof(T), typeof(JInfoAttribute));
 
+			if (info == null) {
+				Interface.Oxide.LogWarning($"[JDeployableManager] Failed to register ({typeof(T)}) - Missing JInfoAttribute.");
+				return;
+			}
+
+			if (DeployableTypes.ContainsKey(typeof(T)) || DeployableTypeRequirements.ContainsKey(typeof(T))) {
+				Interface.Oxide.LogWarning($"[JDeployableManager] [{info.PluginInfo.Title}] {info.Name} has already been registered!");
+				return;
+			}
+
 			// get requirements attributes
 			List<JRequirementAttribute> requirements = System.Attribute.GetCustomAttributes(typeof(T), typeof(JRequirementAttribute)).OfType<JRequirementAttribute>().ToList();
 
-			if (info != null && requirements.Count > 0) {
-				if (!DeployableTypes.ContainsKey(typeof(T))) {
-					DeployableTypes.Add(typeof(T), info);
-					DeployableTypeRequirements.Add(typeof(T), requirements);
-					Interface.Oxide.LogInfo($"[JCore] Registered Deployable: [{info.PluginInfo.Title}] {info.Name}");
-				} else
-					Interface.Oxide.LogWarning($"[JCore] ([{info.PluginInfo.Title}] {info.Name}) has already been registered!");
-			} else
-				Interface.Oxide.LogWarning($"[JCore] Failed to register ({typeof(T)}) for Missing Attribute");
+			if (requirements == null || requirements.Count == 0) {
+				Interface.Oxide.LogWarning($"[JDeployableManager] Failed to register ({typeof(T)}) - Missing JRequirementAttribute.");
+				return;
+			} else if (requirements.Count > 5) {
+				Interface.Oxide.LogWarning($"[JDeployableManager] Failed to register ({typeof(T)}) - More than 5 JRequirementAttribute are not allowed.");
+				return;
+			}
+			
+			DeployableTypes.Add(typeof(T), info);
+			DeployableTypeRequirements.Add(typeof(T), requirements);
+			Interface.Oxide.LogInfo($"[JDeployableManager] Registered Deployable: [{info.PluginInfo.Title}] {info.Name}");
+			
 		}
 
 		/// <summary>
@@ -588,15 +623,18 @@ namespace Oxide.Plugins.JCore {
 		
 		public string ItemShortName { get; }
 		public int ItemAmount { get; }
-		
+		public string PerUnit { get; }
+
 		/// <summary>
 		/// Required Item and amount for placing deployable
 		/// </summary>
-		/// <param name="itemshortname">Shortname of item definition.  Check out the Oxide docs for a list of shortnames.</param>
-		/// <param name="itemamount">Amount required for the item</param>
-		public JRequirementAttribute(string itemshortname, int itemamount = 1) {
-			this.ItemShortName = itemshortname;
-			this.ItemAmount = itemamount;
+		/// <param name="itemShortName">Shortname of item definition.  Check out the Oxide docs for a list of shortnames.</param>
+		/// <param name="itemAmount">Amount required for the item</param>
+		/// <param name="perUnit">Unit per amount required (ex. Transport Pipe is itemAmount per "segment")</param>
+		public JRequirementAttribute(string itemShortName, int itemAmount = 1, string perUnit = null) {
+			this.ItemShortName = itemShortName;
+			this.ItemAmount = itemAmount;
+			this.PerUnit = perUnit ?? string.Empty;
 		}
 	}
 }
@@ -609,12 +647,19 @@ namespace Oxide.Plugins.JCore.Util {
 			{ "autoturret", "http://vignette2.wikia.nocookie.net/play-rust/images/f/f9/Auto_Turret_icon.png/revision/latest/scale-to-width-down/{0}" },
 			{ "bbq", "http://i.imgur.com/DfCm0EJ.png" },
 			{ "box.repair.bench", "http://vignette1.wikia.nocookie.net/play-rust/images/3/3b/Repair_Bench_icon.png/revision/latest/scale-to-width-down/{0}" },
+			
+			{ "gears", "https://vignette.wikia.nocookie.net/play-rust/images/7/72/Gears_icon.png/revision/latest/scale-to-width-down/{0}" },
 
-
-
+			{ "metal.fragments", "https://vignette.wikia.nocookie.net/play-rust/images/7/74/Metal_Fragments_icon.png/revision/latest/scale-to-width-down/{0}" },
+			{ "metal.refined", "https://vignette.wikia.nocookie.net/play-rust/images/a/a1/High_Quality_Metal_icon.png/revision/latest/scale-to-width-down/{0}" },
 
 			{ "vending.machine", "http://vignette2.wikia.nocookie.net/play-rust/images/5/5c/Vending_Machine_icon.png/revision/latest/scale-to-width-down/{0}" },
 
+			{ "wood", "https://vignette.wikia.nocookie.net/play-rust/images/f/f2/Wood_icon.png/revision/latest/scale-to-width-down/{0}" },
+
+			// TODO
+			// convert to shortnames
+			// sort alphabetically
 
 			{ "Small_Stocking", "http://vignette2.wikia.nocookie.net/play-rust/images/9/97/Small_Stocking_icon.png/revision/latest/scale-to-width-down/{0}" },
 			{ "SUPER_Stocking", "http://vignette1.wikia.nocookie.net/play-rust/images/6/6a/SUPER_Stocking_icon.png/revision/latest/scale-to-width-down/{0}" },
@@ -640,7 +685,6 @@ namespace Oxide.Plugins.JCore.Util {
 			{ "Large_Water_Catcher", "http://vignette2.wikia.nocookie.net/play-rust/images/3/35/Large_Water_Catcher_icon.png/revision/latest/scale-to-width-down/{0}" },
 			{ "Large_Wood_Box", "http://vignette1.wikia.nocookie.net/play-rust/images/b/b2/Large_Wood_Box_icon.png/revision/latest/scale-to-width-down/{0}" },
 			{ "Mining_Quarry", "http://vignette1.wikia.nocookie.net/play-rust/images/b/b8/Mining_Quarry_icon.png/revision/latest/scale-to-width-down/{0}" },
-			
 			{ "Small_Oil_Refinery", "http://vignette2.wikia.nocookie.net/play-rust/images/a/ac/Small_Oil_Refinery_icon.png/revision/latest/scale-to-width-down/{0}" },
 			{ "Small_Stash", "http://vignette2.wikia.nocookie.net/play-rust/images/5/53/Small_Stash_icon.png/revision/latest/scale-to-width-down/{0}" },
 			{ "Small_Water_Catcher", "http://vignette2.wikia.nocookie.net/play-rust/images/0/04/Small_Water_Catcher_icon.png/revision/latest/scale-to-width-down/{0}" },
@@ -671,11 +715,7 @@ namespace Oxide.Plugins.JCore.Util {
 namespace Oxide.Plugins.JTechDeployables {
 
 	[JInfo(typeof(JTech), "Assembler", "https://i.imgur.com/R9mD3VQ.png")]
-	[JRequirement("bbq", 5)]
-	[JRequirement("bbq", 5)]
-	[JRequirement("bbq", 5)]
-	[JRequirement("bbq", 5)]
-	[JRequirement("bbq", 5)]
+	[JRequirement("vending.machine", 1), JRequirement("gears", 5), JRequirement("metal.refined", 20)]
 
 	public class Assembler : JDeployable {
 
@@ -686,8 +726,8 @@ namespace Oxide.Plugins.JTechDeployables {
 
 namespace Oxide.Plugins.JTechDeployables {
 
-	[JInfo(typeof(JTech), "Transport Pipe", "https://i.imgur.com/R9mD3VQ.png")]
-	[JRequirement("metal.fragments", 20)]
+	[JInfo(typeof(JTech), "Transport Pipe", "https://vignette.wikia.nocookie.net/play-rust/images/4/4a/Metal_Pipe_icon.png/revision/latest/scale-to-width-down/200")]
+	[JRequirement("wood", 20, "segment")]
 	public class TransportPipe : JDeployable {
 	
 		

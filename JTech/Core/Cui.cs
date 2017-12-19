@@ -115,7 +115,7 @@ namespace Oxide.Plugins.JCore {
 						new CuiLabel {
 							Text = { Text = "Choose a Deployable", FontSize = 22, Align = TextAnchor.MiddleCenter, Color = "1 1 1 1" },
 							RectTransform = { AnchorMin = "0 0.5", AnchorMax = "1 1" }
-						}, parent)
+						}, parent, "0.004 0.341 0.608 0.6")
 				);
 
 				// close overlay if you click the background
@@ -143,8 +143,10 @@ namespace Oxide.Plugins.JCore {
 					float posx = 0.5f + ((ix - (numofbuttons * 0.5f)) * (buttonsizeaspect + buttonspacing)) + buttonspacing * 0.5f;
 					float posy = 0.55f - (buttonsize * 0.5f) - (iy * ((buttonsize) + buttonspacing*2));
 
+					// slight outline around the button
 					FakeDropShadow(elements, parent, posx, posy - buttonsize*0.5f, posx + buttonsizeaspect, posy + (buttonsize), 0.005f*aspect, 0.005f, 1, "0.004 0.341 0.608 0.1");
 
+					// main button
 					string button = elements.Add(
 						new CuiButton {
 							Button = { Command = "", Color = "0.251 0.769 1 0.25" },
@@ -153,10 +155,12 @@ namespace Oxide.Plugins.JCore {
 						}, parent
 					);
 
+					// deployable icon
 					elements.Add(
 						CreateItemIcon(button, "0.05 0.383", "0.95 0.95", info.IconUrl, "1 1 1 1")
 					);
 
+					// button bottom area
 					string buttonbottom = elements.Add(
 						new CuiPanel {
 							Image = { Color = "0 0 0 0" },
@@ -164,8 +168,10 @@ namespace Oxide.Plugins.JCore {
 						}, button
 					);
 
+					// deployable name label shadow
 					FakeDropShadow(elements, buttonbottom, 0, 0.6f, 1, 1f, 0, 0.02f, 2, "0.004 0.341 0.608 0.15");
 
+					// deployable name label
 					string buttonlabel = elements.Add(
 						new CuiPanel {
 							Image = { Color = "0.251 0.769 1 0.9" },
@@ -173,6 +179,7 @@ namespace Oxide.Plugins.JCore {
 						}, buttonbottom
 					);
 
+					// deployable name label text
 					elements.Add(
 						AddOutline(
 						new CuiLabel {
@@ -181,6 +188,7 @@ namespace Oxide.Plugins.JCore {
 						}, buttonlabel, "0.004 0.341 0.608 0.3")
 					);
 
+					// item requirements area
 					string materiallist = elements.Add(
 						new CuiPanel {
 							Image = { Color = "0 0 0 0" },
@@ -189,26 +197,41 @@ namespace Oxide.Plugins.JCore {
 					);
 
 
+					// item requirements
+
 					int numofrequirements = requirements.Count;
 					for (int r = 0; r < numofrequirements; r++) {
 
-						float pos = 0.6f - (numofrequirements*0.1f) + r*(0.2f);
-						string min = $"{pos - 0.1f} 0";
-						string max = $"{pos + 0.1f} 1";
-
 						JRequirementAttribute cur = requirements[r];
 
+						float pos = 0.6f - (numofrequirements*0.1f) + r*(0.2f) - (cur.PerUnit != string.Empty ? cur.PerUnit.Length*0.026f + 0.09f : 0);
+						string min = $"{pos - 0.1f} 0";
+						string max = $"{pos + 0.1f} 1";
+						
+						// item icon
 						elements.Add(
 							CreateItemIcon(materiallist, min, max, Util.Icons.GetItemIconURL(cur.ItemShortName, 64), "1 1 1 1")
 						);
 						
+						// item amount
 						if (cur.ItemAmount > 1) {
 							elements.Add(
 								AddOutline(
-									new CuiLabel {
-										Text = { Text = $"{cur.ItemAmount}", FontSize = 12, Align = TextAnchor.MiddleCenter, Color = "1 1 1 1" },
-										RectTransform = { AnchorMin = min, AnchorMax = max }
-									}, materiallist, "0.15 0.15 0.15 1")
+								new CuiLabel {
+									Text = { Text = $"{cur.ItemAmount}", FontSize = 12, Align = TextAnchor.MiddleCenter, Color = "1 1 1 1" },
+									RectTransform = { AnchorMin = min, AnchorMax = max }
+								}, materiallist, "0.004 0.341 0.608 0.3")
+							);
+						}
+
+						// per unit
+						if (cur.PerUnit != string.Empty) {
+							elements.Add(
+								AddOutline(
+								new CuiLabel {
+									Text = { Text = $"per {cur.PerUnit}", FontSize = 12, Align = TextAnchor.MiddleLeft, Color = "1 1 1 1" },
+									RectTransform = { AnchorMin = $"{pos + 0.135f} 0", AnchorMax = $"{pos + 1.0f} 1" }
+								}, materiallist, "0.004 0.341 0.608 0.3")
 							);
 						}
 					}

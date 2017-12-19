@@ -23,18 +23,31 @@ namespace Oxide.Plugins.JCore {
 			// get info attribute
 			JInfoAttribute info = (JInfoAttribute) System.Attribute.GetCustomAttribute(typeof(T), typeof(JInfoAttribute));
 
+			if (info == null) {
+				Interface.Oxide.LogWarning($"[JDeployableManager] Failed to register ({typeof(T)}) - Missing JInfoAttribute.");
+				return;
+			}
+
+			if (DeployableTypes.ContainsKey(typeof(T)) || DeployableTypeRequirements.ContainsKey(typeof(T))) {
+				Interface.Oxide.LogWarning($"[JDeployableManager] [{info.PluginInfo.Title}] {info.Name} has already been registered!");
+				return;
+			}
+
 			// get requirements attributes
 			List<JRequirementAttribute> requirements = System.Attribute.GetCustomAttributes(typeof(T), typeof(JRequirementAttribute)).OfType<JRequirementAttribute>().ToList();
 
-			if (info != null && requirements.Count > 0) {
-				if (!DeployableTypes.ContainsKey(typeof(T))) {
-					DeployableTypes.Add(typeof(T), info);
-					DeployableTypeRequirements.Add(typeof(T), requirements);
-					Interface.Oxide.LogInfo($"[JCore] Registered Deployable: [{info.PluginInfo.Title}] {info.Name}");
-				} else
-					Interface.Oxide.LogWarning($"[JCore] ([{info.PluginInfo.Title}] {info.Name}) has already been registered!");
-			} else
-				Interface.Oxide.LogWarning($"[JCore] Failed to register ({typeof(T)}) for Missing Attribute");
+			if (requirements == null || requirements.Count == 0) {
+				Interface.Oxide.LogWarning($"[JDeployableManager] Failed to register ({typeof(T)}) - Missing JRequirementAttribute.");
+				return;
+			} else if (requirements.Count > 5) {
+				Interface.Oxide.LogWarning($"[JDeployableManager] Failed to register ({typeof(T)}) - More than 5 JRequirementAttribute are not allowed.");
+				return;
+			}
+			
+			DeployableTypes.Add(typeof(T), info);
+			DeployableTypeRequirements.Add(typeof(T), requirements);
+			Interface.Oxide.LogInfo($"[JDeployableManager] Registered Deployable: [{info.PluginInfo.Title}] {info.Name}");
+			
 		}
 
 		/// <summary>

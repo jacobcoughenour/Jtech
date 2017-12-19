@@ -10,11 +10,7 @@ using Oxide.Plugins.JCore;
 namespace Oxide.Plugins.JTechDeployables {
 
 	[JInfo(typeof(JTech), "Assembler", "https://i.imgur.com/R9mD3VQ.png")]
-	[JRequirement("bbq", 5)]
-	[JRequirement("bbq", 5)]
-	[JRequirement("bbq", 5)]
-	[JRequirement("bbq", 5)]
-	[JRequirement("bbq", 5)]
+	[JRequirement("vending.machine", 1), JRequirement("gears", 5), JRequirement("metal.refined", 20)]
 
 	public class Assembler : JDeployable {
 

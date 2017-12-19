@@ -7,8 +7,6 @@ namespace Oxide.Plugins.JCore {
 
 	public class JDeployable {
 
-		public List<ItemAmount> ingredients = new List<ItemAmount>(){};
-
 		// TODO
 		// handle entity hooks (health, damage, repair)
 		// owner, parent
@@ -18,6 +16,7 @@ namespace Oxide.Plugins.JCore {
 
 
 		public JDeployable() { }
+		
 	}
 
 }

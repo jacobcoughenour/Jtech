@@ -10,15 +10,18 @@ namespace Oxide.Plugins.JCore {
 		
 		public string ItemShortName { get; }
 		public int ItemAmount { get; }
-		
+		public string PerUnit { get; }
+
 		/// <summary>
 		/// Required Item and amount for placing deployable
 		/// </summary>
-		/// <param name="itemshortname">Shortname of item definition.  Check out the Oxide docs for a list of shortnames.</param>
-		/// <param name="itemamount">Amount required for the item</param>
-		public JRequirementAttribute(string itemshortname, int itemamount = 1) {
-			this.ItemShortName = itemshortname;
-			this.ItemAmount = itemamount;
+		/// <param name="itemShortName">Shortname of item definition.  Check out the Oxide docs for a list of shortnames.</param>
+		/// <param name="itemAmount">Amount required for the item</param>
+		/// <param name="perUnit">Unit per amount required (ex. Transport Pipe is itemAmount per "segment")</param>
+		public JRequirementAttribute(string itemShortName, int itemAmount = 1, string perUnit = null) {
+			this.ItemShortName = itemShortName;
+			this.ItemAmount = itemAmount;
+			this.PerUnit = perUnit ?? string.Empty;
 		}
 	}
 }

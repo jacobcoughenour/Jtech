@@ -41,6 +41,8 @@ namespace Oxide.Plugins {
 
 			JDeployableManager.RegisterJDeployable<JTechDeployables.TransportPipe>();
 			JDeployableManager.RegisterJDeployable<JTechDeployables.Assembler>();
+			//JDeployableManager.RegisterJDeployable<JTechDeployables.TrashCan>();
+			//JDeployableManager.RegisterJDeployable<JTechDeployables.AutoFarm>();
 		}
 
 		
@@ -109,10 +111,12 @@ namespace Oxide.Plugins {
 
 		#region Structure
 
-		//void OnHammerHit(BasePlayer player, HitInfo hit) {
-		//	// TODO
-		//	// open menu if deployable
-		//}
+		void OnHammerHit(BasePlayer player, HitInfo hit) {
+			// TODO
+			// open menu if deployable
+
+			ListComponentsDebug(player, hit.HitEntity);
+		}
 
 		#endregion
 
@@ -134,6 +138,81 @@ namespace Oxide.Plugins {
 			UserInfo.HideOverlay(arg.Player());
 		}
 
+		[ConsoleCommand("jtech.startplacing")]
+		private void startplacing(ConsoleSystem.Arg arg) {
+			
+		}
+
+
+
+		#region Debug tools
+
+		// Lists the ent's components and variables to player's chat
+
+		void ListComponentsDebug(BasePlayer player, BaseEntity ent) {
+
+			List<string> lines = new List<string>();
+			string s = "<color=#80c5ff>───────────────────────</color>";
+			int limit = 1030;
+
+			foreach (var c in ent.GetComponents<Component>()) {
+
+				List<string> types = new List<string>();
+				List<string> names = new List<string>();
+				List<string> values = new List<string>();
+				int typelength = 0;
+
+				foreach (FieldInfo fi in c.GetType().GetFields()) {
+
+					System.Object obj = (System.Object) c;
+					string ts = fi.FieldType.Name;
+					if (ts.Length > typelength)
+						typelength = ts.Length;
+
+					types.Add(ts);
+					names.Add(fi.Name);
+
+					var val = fi.GetValue(obj);
+					if (val != null)
+						values.Add(val.ToString());
+					else
+						values.Add("null");
+
+				}
+
+				if (s.Length > 0)
+					s += "\n";
+				s += types.Count > 0 ? "╔" : "═";
+				s += $" {c.GetType()} : {c.GetType().BaseType}";
+				//s += " <" + c.name + ">\n";
+
+				for (int i = 0; i < types.Count; i++) {
+
+					string ns = $"<color=#80c5ff> {types[i]}</color> {names[i]} = <color=#00ff00>{values[i]}</color>";
+
+					if (s.Length + ns.Length >= limit) {
+						lines.Add(s);
+						s = "║" + ns;
+					} else {
+						s += "\n║" + ns;
+					}
+				}
+
+				if (types.Count > 0) {
+					s += "\n╚══";
+					lines.Add(s);
+					s = string.Empty;
+				}
+			}
+
+			lines.Add(s);
+
+			foreach (string ls in lines)
+				PrintToChat(player, ls);
+
+		}
+
+		#endregion
 	}
 }
 
@@ -222,7 +301,7 @@ namespace Oxide.Plugins.JCore {
 
 		public static class Menu {
 
-			public static string CreateOverlay(CuiElementContainer elements) {
+			public static string CreateOverlay(CuiElementContainer elements, UserInfo userInfo) {
 
 				List<Type> registeredDeployables = JDeployableManager.DeployableTypes.Keys.ToList<Type>();
 
@@ -269,6 +348,8 @@ namespace Oxide.Plugins.JCore {
 					List<JRequirementAttribute> requirements;
 					JDeployableManager.DeployableTypeRequirements.TryGetValue(currenttype, out requirements);
 
+					bool canCraftDeployable = userInfo.CanCraftDeployable(currenttype);
+
 					int ix = i % maxbuttonswrap;
 					int iy = i/maxbuttonswrap;
 					
@@ -281,7 +362,7 @@ namespace Oxide.Plugins.JCore {
 					// main button
 					string button = elements.Add(
 						new CuiButton {
-							Button = { Command = "", Color = "0.251 0.769 1 0.25" },
+							Button = { Command = "", Color = canCraftDeployable ? "0.251 0.769 1 0.25" : "0.749 0.922 1 0.075" },
 							RectTransform = { AnchorMin = $"{posx} {posy - buttonsize * 0.5f}", AnchorMax = $"{posx + buttonsizeaspect} {posy + (buttonsize)}" },
 							Text = { Text = "", FontSize = 12, Align = TextAnchor.MiddleCenter, Color = "1 1 1 0" }
 						}, parent
@@ -289,7 +370,7 @@ namespace Oxide.Plugins.JCore {
 
 					// deployable icon
 					elements.Add(
-						CreateItemIcon(button, "0.05 0.383", "0.95 0.95", info.IconUrl, "1 1 1 1")
+						CreateItemIcon(button, "0.05 0.383", "0.95 0.95", info.IconUrl, canCraftDeployable ? "1 1 1 1" : "0.749 0.922 1 0.5")
 					);
 
 					// button bottom area
@@ -306,7 +387,7 @@ namespace Oxide.Plugins.JCore {
 					// deployable name label
 					string buttonlabel = elements.Add(
 						new CuiPanel {
-							Image = { Color = "0.251 0.769 1 0.9" },
+							Image = { Color = canCraftDeployable ? "0.251 0.769 1 0.9" : "0.749 0.922 1 0.3" },
 							RectTransform = { AnchorMin = "-0.031 0.6", AnchorMax = "1.0125 1" }
 						}, buttonbottom
 					);
@@ -315,7 +396,7 @@ namespace Oxide.Plugins.JCore {
 					elements.Add(
 						AddOutline(
 						new CuiLabel {
-							Text = { Text = info.Name, FontSize = 16, Align = TextAnchor.MiddleCenter, Color = "1 1 1 1" },
+							Text = { Text = info.Name, FontSize = 16, Align = TextAnchor.MiddleCenter, Color = canCraftDeployable ? "1 1 1 1" : "1 1 1 0.6" },
 							RectTransform = { AnchorMin = "0 0", AnchorMax = "1 1" }
 						}, buttonlabel, "0.004 0.341 0.608 0.3")
 					);
@@ -336,13 +417,15 @@ namespace Oxide.Plugins.JCore {
 
 						JRequirementAttribute cur = requirements[r];
 
+						bool hasRequirement = userInfo.DoesHaveUsableItem(cur.ItemId, cur.ItemAmount);
+
 						float pos = 0.6f - (numofrequirements*0.1f) + r*(0.2f) - (cur.PerUnit != string.Empty ? cur.PerUnit.Length*0.026f + 0.09f : 0);
 						string min = $"{pos - 0.1f} 0";
 						string max = $"{pos + 0.1f} 1";
 						
 						// item icon
 						elements.Add(
-							CreateItemIcon(materiallist, min, max, Util.Icons.GetItemIconURL(cur.ItemShortName, 64), "1 1 1 1")
+							CreateItemIcon(materiallist, min, max, Util.Icons.GetItemIconURL(cur.ItemShortName, 64), hasRequirement ? "1 1 1 1" : "1 1 1 0.5")
 						);
 						
 						// item amount
@@ -350,7 +433,7 @@ namespace Oxide.Plugins.JCore {
 							elements.Add(
 								AddOutline(
 								new CuiLabel {
-									Text = { Text = $"{cur.ItemAmount}", FontSize = 12, Align = TextAnchor.MiddleCenter, Color = "1 1 1 1" },
+									Text = { Text = $"{cur.ItemAmount}", FontSize = 12, Align = TextAnchor.MiddleCenter, Color = hasRequirement ? "1 1 1 1" : "1 0.835 0.31 1" },
 									RectTransform = { AnchorMin = min, AnchorMax = max }
 								}, materiallist, "0.004 0.341 0.608 0.3")
 							);
@@ -511,6 +594,7 @@ namespace Oxide.Plugins.JCore {
 			enabled = true;
 			lastActiveItem = 0;
 			isOverlayOpen = false;
+
 		}
 
 		void Update() {
@@ -544,7 +628,27 @@ namespace Oxide.Plugins.JCore {
 			isHoldingHammer = (item != null && item.info != null && (item.info.name == "hammer.item"));
 		}
 
-		
+		public bool CanCraftDeployable(Type jdeployabletype) {
+
+			List<JRequirementAttribute> requirements;
+			JDeployableManager.DeployableTypeRequirements.TryGetValue(jdeployabletype, out requirements);
+
+			if (requirements == null) return false;
+
+			foreach (JRequirementAttribute req in requirements) {
+				if (!this.DoesHaveUsableItem(req.ItemId, req.ItemAmount))
+					return false;
+			}
+			return true;
+		}
+
+		public bool DoesHaveUsableItem(int item, int iAmount) {
+			int num = 0;
+			foreach (ItemContainer container in player.inventory.crafting.containers)
+				num += container.GetAmount(item, true);
+			return num >= iAmount;
+		}
+
 
 		/// <summary>
 		/// Show overlay menu for the given BasePlayer
@@ -559,7 +663,7 @@ namespace Oxide.Plugins.JCore {
 			
 			var elements = new CuiElementContainer();
 
-			overlay = Cui.Menu.CreateOverlay(elements);
+			overlay = Cui.Menu.CreateOverlay(elements, this);
 
 			CuiHelper.AddUi(player, elements);
 
@@ -620,8 +724,10 @@ namespace Oxide.Plugins.JCore {
 
 	[AttributeUsage(AttributeTargets.Class, AllowMultiple = true)]
 	public class JRequirementAttribute : Attribute {
-		
+
+		public ItemDefinition itemDef { get; }
 		public string ItemShortName { get; }
+		public int ItemId { get; }
 		public int ItemAmount { get; }
 		public string PerUnit { get; }
 
@@ -635,6 +741,24 @@ namespace Oxide.Plugins.JCore {
 			this.ItemShortName = itemShortName;
 			this.ItemAmount = itemAmount;
 			this.PerUnit = perUnit ?? string.Empty;
+
+			this.itemDef = ItemManager.FindItemDefinition(this.ItemShortName);
+			this.ItemId = this.itemDef.itemid;
+		}
+
+		/// <summary>
+		/// Required Item and amount for placing deployable
+		/// </summary>
+		/// <param name="itemId">itemId of item definition.  Check out the Oxide docs for a list of itemIds.</param>
+		/// <param name="itemAmount">Amount required for the item</param>
+		/// <param name="perUnit">Unit per amount required (ex. Transport Pipe is itemAmount per "segment")</param>
+		public JRequirementAttribute(int itemId, int itemAmount = 1, string perUnit = null) {
+			this.ItemId = itemId;
+			this.ItemAmount = itemAmount;
+			this.PerUnit = perUnit ?? string.Empty;
+
+			this.itemDef = ItemManager.FindItemDefinition(this.ItemId);
+			this.ItemShortName = this.itemDef.shortname;
 		}
 	}
 }
@@ -643,15 +767,20 @@ namespace Oxide.Plugins.JCore.Util {
 
 	public static class Icons {
 
+		// list of items with shortnames: https://github.com/OxideMod/Oxide.Docs/blob/master/source/includes/rust/item_list.md
+		// item icons: http://rust.wikia.com/wiki/Items
+
 		private readonly static Dictionary<string, string> ItemUrls = new Dictionary<string, string>() {
 			{ "autoturret", "http://vignette2.wikia.nocookie.net/play-rust/images/f/f9/Auto_Turret_icon.png/revision/latest/scale-to-width-down/{0}" },
-			{ "bbq", "http://i.imgur.com/DfCm0EJ.png" },
+			{ "bbq", "https://vignette.wikia.nocookie.net/play-rust/images/f/f8/Barbeque_icon.png/revision/latest/scale-to-width-down/{0}" },
 			{ "box.repair.bench", "http://vignette1.wikia.nocookie.net/play-rust/images/3/3b/Repair_Bench_icon.png/revision/latest/scale-to-width-down/{0}" },
 			
 			{ "gears", "https://vignette.wikia.nocookie.net/play-rust/images/7/72/Gears_icon.png/revision/latest/scale-to-width-down/{0}" },
 
 			{ "metal.fragments", "https://vignette.wikia.nocookie.net/play-rust/images/7/74/Metal_Fragments_icon.png/revision/latest/scale-to-width-down/{0}" },
 			{ "metal.refined", "https://vignette.wikia.nocookie.net/play-rust/images/a/a1/High_Quality_Metal_icon.png/revision/latest/scale-to-width-down/{0}" },
+
+			{ "scrap", "https://vignette.wikia.nocookie.net/play-rust/images/0/03/Scrap_icon.png/revision/latest/scale-to-width-down/{0}" },
 
 			{ "vending.machine", "http://vignette2.wikia.nocookie.net/play-rust/images/5/5c/Vending_Machine_icon.png/revision/latest/scale-to-width-down/{0}" },
 
@@ -715,9 +844,21 @@ namespace Oxide.Plugins.JCore.Util {
 namespace Oxide.Plugins.JTechDeployables {
 
 	[JInfo(typeof(JTech), "Assembler", "https://i.imgur.com/R9mD3VQ.png")]
-	[JRequirement("vending.machine", 1), JRequirement("gears", 5), JRequirement("metal.refined", 20)]
+	[JRequirement("vending.machine"), JRequirement("gears", 5), JRequirement("metal.refined", 20)]
 
 	public class Assembler : JDeployable {
+
+
+
+	}
+}
+
+namespace Oxide.Plugins.JTechDeployables {
+
+	[JInfo(typeof(JTech), "Auto Farm", "https://i.imgur.com/lEXshkx.png")]
+	[JRequirement("scrap", 10)]
+
+	public class AutoFarm : JDeployable {
 
 
 
@@ -730,8 +871,23 @@ namespace Oxide.Plugins.JTechDeployables {
 	[JRequirement("wood", 20, "segment")]
 	public class TransportPipe : JDeployable {
 	
+
+
+
 		
 
 	}
 
+}
+
+namespace Oxide.Plugins.JTechDeployables {
+
+	[JInfo(typeof(JTech), "Trash Can", "https://i.imgur.com/lEXshkx.png")]
+	[JRequirement("scrap", 10)]
+
+	public class TrashCan : JDeployable {
+
+
+
+	}
 }

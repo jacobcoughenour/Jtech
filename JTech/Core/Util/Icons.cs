@@ -9,15 +9,20 @@ namespace Oxide.Plugins.JCore.Util {
 
 	public static class Icons {
 
+		// list of items with shortnames: https://github.com/OxideMod/Oxide.Docs/blob/master/source/includes/rust/item_list.md
+		// item icons: http://rust.wikia.com/wiki/Items
+
 		private readonly static Dictionary<string, string> ItemUrls = new Dictionary<string, string>() {
 			{ "autoturret", "http://vignette2.wikia.nocookie.net/play-rust/images/f/f9/Auto_Turret_icon.png/revision/latest/scale-to-width-down/{0}" },
-			{ "bbq", "http://i.imgur.com/DfCm0EJ.png" },
+			{ "bbq", "https://vignette.wikia.nocookie.net/play-rust/images/f/f8/Barbeque_icon.png/revision/latest/scale-to-width-down/{0}" },
 			{ "box.repair.bench", "http://vignette1.wikia.nocookie.net/play-rust/images/3/3b/Repair_Bench_icon.png/revision/latest/scale-to-width-down/{0}" },
 			
 			{ "gears", "https://vignette.wikia.nocookie.net/play-rust/images/7/72/Gears_icon.png/revision/latest/scale-to-width-down/{0}" },
 
 			{ "metal.fragments", "https://vignette.wikia.nocookie.net/play-rust/images/7/74/Metal_Fragments_icon.png/revision/latest/scale-to-width-down/{0}" },
 			{ "metal.refined", "https://vignette.wikia.nocookie.net/play-rust/images/a/a1/High_Quality_Metal_icon.png/revision/latest/scale-to-width-down/{0}" },
+
+			{ "scrap", "https://vignette.wikia.nocookie.net/play-rust/images/0/03/Scrap_icon.png/revision/latest/scale-to-width-down/{0}" },
 
 			{ "vending.machine", "http://vignette2.wikia.nocookie.net/play-rust/images/5/5c/Vending_Machine_icon.png/revision/latest/scale-to-width-down/{0}" },
 

@@ -244,6 +244,8 @@
     <Compile Include="Core\JDeployable.cs" />
     <Compile Include="Core\JDeployableManager.cs" />
     <Compile Include="Core\UserInfo.cs" />
+    <Compile Include="Deployables\AutoFarm.cs" />
+    <Compile Include="Deployables\TrashCan.cs" />
     <Compile Include="Deployables\Assembler.cs" />
     <Compile Include="Deployables\TransportPipe.cs" />
     <Compile Include="Main.cs" />

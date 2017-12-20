@@ -90,7 +90,7 @@ namespace Oxide.Plugins.JCore {
 
 		public static class Menu {
 
-			public static string CreateOverlay(CuiElementContainer elements) {
+			public static string CreateOverlay(CuiElementContainer elements, UserInfo userInfo) {
 
 				List<Type> registeredDeployables = JDeployableManager.DeployableTypes.Keys.ToList<Type>();
 
@@ -137,6 +137,8 @@ namespace Oxide.Plugins.JCore {
 					List<JRequirementAttribute> requirements;
 					JDeployableManager.DeployableTypeRequirements.TryGetValue(currenttype, out requirements);
 
+					bool canCraftDeployable = userInfo.CanCraftDeployable(currenttype);
+
 					int ix = i % maxbuttonswrap;
 					int iy = i/maxbuttonswrap;
 					
@@ -149,7 +151,7 @@ namespace Oxide.Plugins.JCore {
 					// main button
 					string button = elements.Add(
 						new CuiButton {
-							Button = { Command = "", Color = "0.251 0.769 1 0.25" },
+							Button = { Command = "", Color = canCraftDeployable ? "0.251 0.769 1 0.25" : "0.749 0.922 1 0.075" },
 							RectTransform = { AnchorMin = $"{posx} {posy - buttonsize * 0.5f}", AnchorMax = $"{posx + buttonsizeaspect} {posy + (buttonsize)}" },
 							Text = { Text = "", FontSize = 12, Align = TextAnchor.MiddleCenter, Color = "1 1 1 0" }
 						}, parent
@@ -157,7 +159,7 @@ namespace Oxide.Plugins.JCore {
 
 					// deployable icon
 					elements.Add(
-						CreateItemIcon(button, "0.05 0.383", "0.95 0.95", info.IconUrl, "1 1 1 1")
+						CreateItemIcon(button, "0.05 0.383", "0.95 0.95", info.IconUrl, canCraftDeployable ? "1 1 1 1" : "0.749 0.922 1 0.5")
 					);
 
 					// button bottom area
@@ -174,7 +176,7 @@ namespace Oxide.Plugins.JCore {
 					// deployable name label
 					string buttonlabel = elements.Add(
 						new CuiPanel {
-							Image = { Color = "0.251 0.769 1 0.9" },
+							Image = { Color = canCraftDeployable ? "0.251 0.769 1 0.9" : "0.749 0.922 1 0.3" },
 							RectTransform = { AnchorMin = "-0.031 0.6", AnchorMax = "1.0125 1" }
 						}, buttonbottom
 					);
@@ -183,7 +185,7 @@ namespace Oxide.Plugins.JCore {
 					elements.Add(
 						AddOutline(
 						new CuiLabel {
-							Text = { Text = info.Name, FontSize = 16, Align = TextAnchor.MiddleCenter, Color = "1 1 1 1" },
+							Text = { Text = info.Name, FontSize = 16, Align = TextAnchor.MiddleCenter, Color = canCraftDeployable ? "1 1 1 1" : "1 1 1 0.6" },
 							RectTransform = { AnchorMin = "0 0", AnchorMax = "1 1" }
 						}, buttonlabel, "0.004 0.341 0.608 0.3")
 					);
@@ -204,13 +206,15 @@ namespace Oxide.Plugins.JCore {
 
 						JRequirementAttribute cur = requirements[r];
 
+						bool hasRequirement = userInfo.DoesHaveUsableItem(cur.ItemId, cur.ItemAmount);
+
 						float pos = 0.6f - (numofrequirements*0.1f) + r*(0.2f) - (cur.PerUnit != string.Empty ? cur.PerUnit.Length*0.026f + 0.09f : 0);
 						string min = $"{pos - 0.1f} 0";
 						string max = $"{pos + 0.1f} 1";
 						
 						// item icon
 						elements.Add(
-							CreateItemIcon(materiallist, min, max, Util.Icons.GetItemIconURL(cur.ItemShortName, 64), "1 1 1 1")
+							CreateItemIcon(materiallist, min, max, Util.Icons.GetItemIconURL(cur.ItemShortName, 64), hasRequirement ? "1 1 1 1" : "1 1 1 0.5")
 						);
 						
 						// item amount
@@ -218,7 +222,7 @@ namespace Oxide.Plugins.JCore {
 							elements.Add(
 								AddOutline(
 								new CuiLabel {
-									Text = { Text = $"{cur.ItemAmount}", FontSize = 12, Align = TextAnchor.MiddleCenter, Color = "1 1 1 1" },
+									Text = { Text = $"{cur.ItemAmount}", FontSize = 12, Align = TextAnchor.MiddleCenter, Color = hasRequirement ? "1 1 1 1" : "1 0.835 0.31 1" },
 									RectTransform = { AnchorMin = min, AnchorMax = max }
 								}, materiallist, "0.004 0.341 0.608 0.3")
 							);

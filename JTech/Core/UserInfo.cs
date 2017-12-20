@@ -26,6 +26,7 @@ namespace Oxide.Plugins.JCore {
 			enabled = true;
 			lastActiveItem = 0;
 			isOverlayOpen = false;
+
 		}
 
 		void Update() {
@@ -59,7 +60,27 @@ namespace Oxide.Plugins.JCore {
 			isHoldingHammer = (item != null && item.info != null && (item.info.name == "hammer.item"));
 		}
 
-		
+		public bool CanCraftDeployable(Type jdeployabletype) {
+
+			List<JRequirementAttribute> requirements;
+			JDeployableManager.DeployableTypeRequirements.TryGetValue(jdeployabletype, out requirements);
+
+			if (requirements == null) return false;
+
+			foreach (JRequirementAttribute req in requirements) {
+				if (!this.DoesHaveUsableItem(req.ItemId, req.ItemAmount))
+					return false;
+			}
+			return true;
+		}
+
+		public bool DoesHaveUsableItem(int item, int iAmount) {
+			int num = 0;
+			foreach (ItemContainer container in player.inventory.crafting.containers)
+				num += container.GetAmount(item, true);
+			return num >= iAmount;
+		}
+
 
 		/// <summary>
 		/// Show overlay menu for the given BasePlayer
@@ -74,7 +95,7 @@ namespace Oxide.Plugins.JCore {
 			
 			var elements = new CuiElementContainer();
 
-			overlay = Cui.Menu.CreateOverlay(elements);
+			overlay = Cui.Menu.CreateOverlay(elements, this);
 
 			CuiHelper.AddUi(player, elements);
 

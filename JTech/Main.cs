@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
@@ -38,6 +38,8 @@ namespace Oxide.Plugins {
 
 			JDeployableManager.RegisterJDeployable<JTechDeployables.TransportPipe>();
 			JDeployableManager.RegisterJDeployable<JTechDeployables.Assembler>();
+			//JDeployableManager.RegisterJDeployable<JTechDeployables.TrashCan>();
+			//JDeployableManager.RegisterJDeployable<JTechDeployables.AutoFarm>();
 		}
 
 		
@@ -106,10 +108,12 @@ namespace Oxide.Plugins {
 
 		#region Structure
 
-		//void OnHammerHit(BasePlayer player, HitInfo hit) {
-		//	// TODO
-		//	// open menu if deployable
-		//}
+		void OnHammerHit(BasePlayer player, HitInfo hit) {
+			// TODO
+			// open menu if deployable
+
+			ListComponentsDebug(player, hit.HitEntity);
+		}
 
 		#endregion
 
@@ -131,5 +135,80 @@ namespace Oxide.Plugins {
 			UserInfo.HideOverlay(arg.Player());
 		}
 
+		[ConsoleCommand("jtech.startplacing")]
+		private void startplacing(ConsoleSystem.Arg arg) {
+			
+		}
+
+
+
+		#region Debug tools
+
+		// Lists the ent's components and variables to player's chat
+
+		void ListComponentsDebug(BasePlayer player, BaseEntity ent) {
+
+			List<string> lines = new List<string>();
+			string s = "<color=#80c5ff>───────────────────────</color>";
+			int limit = 1030;
+
+			foreach (var c in ent.GetComponents<Component>()) {
+
+				List<string> types = new List<string>();
+				List<string> names = new List<string>();
+				List<string> values = new List<string>();
+				int typelength = 0;
+
+				foreach (FieldInfo fi in c.GetType().GetFields()) {
+
+					System.Object obj = (System.Object) c;
+					string ts = fi.FieldType.Name;
+					if (ts.Length > typelength)
+						typelength = ts.Length;
+
+					types.Add(ts);
+					names.Add(fi.Name);
+
+					var val = fi.GetValue(obj);
+					if (val != null)
+						values.Add(val.ToString());
+					else
+						values.Add("null");
+
+				}
+
+				if (s.Length > 0)
+					s += "\n";
+				s += types.Count > 0 ? "╔" : "═";
+				s += $" {c.GetType()} : {c.GetType().BaseType}";
+				//s += " <" + c.name + ">\n";
+
+				for (int i = 0; i < types.Count; i++) {
+
+					string ns = $"<color=#80c5ff> {types[i]}</color> {names[i]} = <color=#00ff00>{values[i]}</color>";
+
+					if (s.Length + ns.Length >= limit) {
+						lines.Add(s);
+						s = "║" + ns;
+					} else {
+						s += "\n║" + ns;
+					}
+				}
+
+				if (types.Count > 0) {
+					s += "\n╚══";
+					lines.Add(s);
+					s = string.Empty;
+				}
+			}
+
+			lines.Add(s);
+
+			foreach (string ls in lines)
+				PrintToChat(player, ls);
+
+		}
+
+		#endregion
 	}
 }

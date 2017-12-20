@@ -151,7 +151,7 @@ namespace Oxide.Plugins.JCore {
 					// main button
 					string button = elements.Add(
 						new CuiButton {
-							Button = { Command = "", Color = canCraftDeployable ? "0.251 0.769 1 0.25" : "0.749 0.922 1 0.075" },
+							Button = { Command = canCraftDeployable ? $"jtech.startplacing {currenttype.FullName}" : "", Color = canCraftDeployable ? "0.251 0.769 1 0.25" : "0.749 0.922 1 0.075" },
 							RectTransform = { AnchorMin = $"{posx} {posy - buttonsize * 0.5f}", AnchorMax = $"{posx + buttonsizeaspect} {posy + (buttonsize)}" },
 							Text = { Text = "", FontSize = 12, Align = TextAnchor.MiddleCenter, Color = "1 1 1 0" }
 						}, parent

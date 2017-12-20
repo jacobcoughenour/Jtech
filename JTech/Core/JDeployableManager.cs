@@ -67,6 +67,18 @@ namespace Oxide.Plugins.JCore {
 			}
 		}
 
+		public static bool TryGetType(string name, out Type deployabletype) {
+
+			foreach (Type type in DeployableTypes.Keys)
+				if (type.FullName == name) {
+					deployabletype = type;
+					return true;
+				}
+
+			deployabletype = null;
+			return false;
+		}
+
 		// TODO
 		// manage spawned deployables
 		// distributive deployable update

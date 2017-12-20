@@ -17,7 +17,20 @@ namespace Oxide.Plugins.JCore {
 		private float startPressingTime;
 
 		private string overlay; // uid for overlay cui instance
+		private string messageoverlay;
+		private string currentmessageoverlaytext;
+		private string currentmessageoverlaysubtext;
 		private bool isOverlayOpen;
+
+		private bool isPlacing;
+		private Type placingType;
+
+		/// <summary>
+		/// Get/create UserInfo from a BasePlayer.
+		/// </summary>
+		public static UserInfo Get(BasePlayer basePlayer) {
+			return basePlayer.GetComponent<UserInfo>() ?? basePlayer.gameObject.AddComponent<UserInfo>();
+		}
 
 		void Awake() {
 
@@ -117,14 +130,112 @@ namespace Oxide.Plugins.JCore {
 				Game.Rust.Cui.CuiHelper.DestroyUi(player, overlay);
 			isOverlayOpen = false;
 		}
-		
+
 		/// <summary>
-		/// Get/create UserInfo from a BasePlayer.
+		/// Shows error message text for player
 		/// </summary>
-		public static UserInfo Get(BasePlayer basePlayer) {
-			return basePlayer.GetComponent<UserInfo>() ?? basePlayer.gameObject.AddComponent<UserInfo>();
+		/// <param name="message">message text</param>
+		/// <param name="submessage">subtext message text</param>
+		public void ShowErrorMessage(string message, string subtext = "") {
+			ShowMessageText(message, subtext);
+			HideMessageText(2f);
 		}
+
+		private void ShowMessageText(string text, string subtext = "", string textcolor = "1.0 1.0 1.0 1.0") {
+
+			HideMessageText();
+
+			var elements = new CuiElementContainer();
+
+			messageoverlay = elements.Add(
+				Cui.CreatePanel("0.3 0.3", "0.7 0.35", "0 0 0 0")
+			);
+
+			elements.Add(
+				Cui.AddOutline(
+				new CuiLabel {
+					Text = { Text = (subtext != "") ? $"{text}\n<size=12>{subtext}</size>" : text, FontSize = 14, Align = TextAnchor.MiddleCenter, Color = textcolor },
+					RectTransform = { AnchorMin = "0 0", AnchorMax = "1 1" },
+					FadeOut = 2f
+				},
+				messageoverlay)
+			);
+
+			CuiHelper.AddUi(player, elements);
+
+			currentmessageoverlaytext = text;
+			currentmessageoverlaysubtext = subtext;
+		}
+
+		private void HideMessageText(float delay = 0) {
+
+			if (delay > 0) {
+				string oldoverlay = messageoverlay;
+				string beforetext = currentmessageoverlaytext;
+				string beforesub = currentmessageoverlaysubtext;
+				StartCoroutine(DelayHide(delay, oldoverlay, beforetext, beforesub));
+			} else {
+				if (!string.IsNullOrEmpty(messageoverlay))
+					CuiHelper.DestroyUi(player, messageoverlay);
+				currentmessageoverlaytext = string.Empty;
+				currentmessageoverlaysubtext = string.Empty;
+			}
+		}
+
+		private IEnumerator DelayHide(float delay, string oldoverlay, string beforetext, string beforesub) {
+			yield return new WaitForSecondsRealtime(delay);
+
+			if (!string.IsNullOrEmpty(messageoverlay))
+				CuiHelper.DestroyUi(player, messageoverlay);
+			if (beforetext == currentmessageoverlaytext)
+				currentmessageoverlaytext = string.Empty;
+			if (beforesub == currentmessageoverlaysubtext)
+				currentmessageoverlaysubtext = string.Empty;
+		}
+
+		/// <summary>
+		/// Start placing a deployable
+		/// </summary>
+		public static void StartPlacing(BasePlayer basePlayer, Type deployabletype) => Get(basePlayer).StartPlacing(deployabletype);
+
+		/// <summary>
+		/// Start placing deployable
+		/// </summary>
+		public void StartPlacing(Type deployabletype) {
 		
+
+			var methodInfo = deployabletype.GetMethod("CanStartPlacing");
+			if (methodInfo != null) {
+				if (!(bool) methodInfo.Invoke(null, new object[] { this }))
+					return;
+			}
+
+			// start placing
+
+			HideOverlay();
+			
+			isPlacing = true;
+			placingType = deployabletype;
+
+
+		}
+
+		/// <summary>
+		/// Stop placing deployable
+		/// </summary>
+		public void StopPlacing() {
+			
+			var methodInfo = placingType.GetMethod("StopPlacing");
+			if (methodInfo != null)
+				methodInfo.Invoke(null, new object[] { this });
+			
+			isPlacing = false;
+			placingType = null;
+
+		}
+
+
+
 	}
 
 }

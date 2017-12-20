@@ -21,6 +21,7 @@ namespace Oxide.Plugins.JCore {
 		private string currentmessageoverlaytext;
 		private string currentmessageoverlaysubtext;
 		private bool isOverlayOpen;
+		private Coroutine MessageTextHide;
 
 		private bool isPlacing;
 		private Type placingType;
@@ -167,13 +168,19 @@ namespace Oxide.Plugins.JCore {
 			currentmessageoverlaysubtext = subtext;
 		}
 
-		private void HideMessageText(float delay = 0) {
+		/// <summary>
+		/// Hide current message text for player with optional delay
+		/// </summary>
+		public void HideMessageText(float delay = 0) {
+
+			if (MessageTextHide != null)
+				StopCoroutine(MessageTextHide); // cancel previous delayed hide
 
 			if (delay > 0) {
 				string oldoverlay = messageoverlay;
 				string beforetext = currentmessageoverlaytext;
 				string beforesub = currentmessageoverlaysubtext;
-				StartCoroutine(DelayHide(delay, oldoverlay, beforetext, beforesub));
+				MessageTextHide = StartCoroutine(DelayHide(delay, oldoverlay, beforetext, beforesub));
 			} else {
 				if (!string.IsNullOrEmpty(messageoverlay))
 					CuiHelper.DestroyUi(player, messageoverlay);
@@ -191,6 +198,8 @@ namespace Oxide.Plugins.JCore {
 				currentmessageoverlaytext = string.Empty;
 			if (beforesub == currentmessageoverlaysubtext)
 				currentmessageoverlaysubtext = string.Empty;
+
+			MessageTextHide = null;
 		}
 
 		/// <summary>

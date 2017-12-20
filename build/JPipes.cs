@@ -11,7 +11,7 @@ using Oxide.Core.Libraries.Covalence;
 
 namespace Oxide.Plugins {
 
-    [Info("JPipes", "TheGreatJ", "0.6.0", ResourceId = 2402)]
+    [Info("JPipes", "TheGreatJ", "0.6.1", ResourceId = 2402)]
     class JPipes : RustPlugin {
 
         [PluginReference]
@@ -264,8 +264,8 @@ namespace Oxide.Plugins {
         }
 
         bool? OnStructureUpgrade(BaseCombatEntity entity, BasePlayer player, BuildingGrade.Enum grade) {
-            jPipeSegChild p = entity.GetComponent<jPipeSegChild>();
-            if (p != null && p.pipe != null) {
+            jPipeSegChild p = entity?.GetComponent<jPipeSegChild>();
+            if (p != null && p.pipe != null && player != null) {
                 if (!commandperm(player))
                     return false;
                 int upgradelimit = getplayerupgradelimit(player);
@@ -304,11 +304,16 @@ namespace Oxide.Plugins {
 						hitInfo.damageTypes.Scale(Rust.DamageType.Decay, 0f); // no decay damage
 					float damage = hitInfo.damageTypes.Total();
 					if (damage > 0) {
-						float newhealth = entity.GetComponent<BuildingBlock>().health - damage;
-						if (newhealth >= 1f)
-							p.pipe.SetHealth(newhealth);
-						else
-							p.pipe.OnSegmentKilled();
+
+						BuildingBlock block = entity.GetComponent<BuildingBlock>();
+						if (block != null && p.pipe != null) {
+							float newhealth = block.health - damage;
+							if (newhealth >= 1f)
+								p.pipe.SetHealth(newhealth);
+							else
+								p.pipe.OnSegmentKilled();
+						}
+						
 					}
 					return true;
 				}
@@ -561,7 +566,10 @@ namespace Oxide.Plugins {
 
         [ConsoleCommand("jpipes.changedir")]
         private void cmdpipechangedir(ConsoleSystem.Arg arg) {
-            if (!commandperm(arg.Player()))
+			BasePlayer p = arg.Player();
+			if (p == null)
+				return;
+			if (!commandperm(p))
                 return;
             jPipe pipe;
             if (regpipes.TryGetValue((ulong) int.Parse(arg.Args[0]), out pipe)) {
@@ -572,6 +580,8 @@ namespace Oxide.Plugins {
         [ConsoleCommand("jpipes.openfilter")]
         private void cmdpipeopenfilter(ConsoleSystem.Arg arg) {
             BasePlayer p = arg.Player();
+			if (p == null)
+				return;
             if (!commandperm(p))
                 return;
             jPipe pipe;

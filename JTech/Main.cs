@@ -137,7 +137,15 @@ namespace Oxide.Plugins {
 
 		[ConsoleCommand("jtech.startplacing")]
 		private void startplacing(ConsoleSystem.Arg arg) {
-			
+
+			if (arg.HasArgs()) {
+
+				Type deployabletype;
+				if (JDeployableManager.TryGetType(arg.Args[0], out deployabletype)) {
+					
+					UserInfo.StartPlacing(arg.Player(), deployabletype);
+				}
+			}
 		}
 
 

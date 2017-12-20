@@ -140,7 +140,15 @@ namespace Oxide.Plugins {
 
 		[ConsoleCommand("jtech.startplacing")]
 		private void startplacing(ConsoleSystem.Arg arg) {
-			
+
+			if (arg.HasArgs()) {
+
+				Type deployabletype;
+				if (JDeployableManager.TryGetType(arg.Args[0], out deployabletype)) {
+					
+					UserInfo.StartPlacing(arg.Player(), deployabletype);
+				}
+			}
 		}
 
 
@@ -362,7 +370,7 @@ namespace Oxide.Plugins.JCore {
 					// main button
 					string button = elements.Add(
 						new CuiButton {
-							Button = { Command = "", Color = canCraftDeployable ? "0.251 0.769 1 0.25" : "0.749 0.922 1 0.075" },
+							Button = { Command = canCraftDeployable ? $"jtech.startplacing {currenttype.FullName}" : "", Color = canCraftDeployable ? "0.251 0.769 1 0.25" : "0.749 0.922 1 0.075" },
 							RectTransform = { AnchorMin = $"{posx} {posy - buttonsize * 0.5f}", AnchorMax = $"{posx + buttonsizeaspect} {posy + (buttonsize)}" },
 							Text = { Text = "", FontSize = 12, Align = TextAnchor.MiddleCenter, Color = "1 1 1 0" }
 						}, parent
@@ -490,9 +498,16 @@ namespace Oxide.Plugins.JCore {
 		// spawn/destroy 
 		// load/save
 
+		/// <summary>
+		/// Can User start placing this deployable?
+		/// Item requirements are already handled by UserInfo.
+		/// This is if you want to add custom requirements to creating your deployable.
+		/// </summary>
+		/// <returns>if user can start placing this deployable</returns>
+		public static bool CanStartPlacing(UserInfo userInfo) {
+			return true;
+		}
 
-		public JDeployable() { }
-		
 	}
 
 }
@@ -558,6 +573,18 @@ namespace Oxide.Plugins.JCore {
 			}
 		}
 
+		public static bool TryGetType(string name, out Type deployabletype) {
+
+			foreach (Type type in DeployableTypes.Keys)
+				if (type.FullName == name) {
+					deployabletype = type;
+					return true;
+				}
+
+			deployabletype = null;
+			return false;
+		}
+
 		// TODO
 		// manage spawned deployables
 		// distributive deployable update
@@ -585,7 +612,17 @@ namespace Oxide.Plugins.JCore {
 		private float startPressingTime;
 
 		private string overlay; // uid for overlay cui instance
+		private string messageoverlay;
+		private string currentmessageoverlaytext;
+		private string currentmessageoverlaysubtext;
 		private bool isOverlayOpen;
+
+		/// <summary>
+		/// Get/create UserInfo from a BasePlayer.
+		/// </summary>
+		public static UserInfo Get(BasePlayer basePlayer) {
+			return basePlayer.GetComponent<UserInfo>() ?? basePlayer.gameObject.AddComponent<UserInfo>();
+		}
 
 		void Awake() {
 
@@ -685,13 +722,95 @@ namespace Oxide.Plugins.JCore {
 				Game.Rust.Cui.CuiHelper.DestroyUi(player, overlay);
 			isOverlayOpen = false;
 		}
-		
+
 		/// <summary>
-		/// Get/create UserInfo from a BasePlayer.
+		/// Shows error message text for player
 		/// </summary>
-		public static UserInfo Get(BasePlayer basePlayer) {
-			return basePlayer.GetComponent<UserInfo>() ?? basePlayer.gameObject.AddComponent<UserInfo>();
+		/// <param name="message">message text</param>
+		/// <param name="submessage">subtext message text</param>
+		public void ShowErrorMessage(string message, string subtext = "") {
+			ShowMessageText(message, subtext);
+			HideMessageText(2f);
 		}
+
+		private void ShowMessageText(string text, string subtext = "", string textcolor = "1.0 1.0 1.0 1.0") {
+
+			HideMessageText();
+
+			var elements = new CuiElementContainer();
+
+			messageoverlay = elements.Add(
+				Cui.CreatePanel("0.3 0.3", "0.7 0.35", "0 0 0 0")
+			);
+
+			elements.Add(
+				Cui.AddOutline(
+				new CuiLabel {
+					Text = { Text = (subtext != "") ? $"{text}\n<size=12>{subtext}</size>" : text, FontSize = 14, Align = TextAnchor.MiddleCenter, Color = textcolor },
+					RectTransform = { AnchorMin = "0 0", AnchorMax = "1 1" },
+					FadeOut = 2f
+				},
+				messageoverlay)
+			);
+
+			CuiHelper.AddUi(player, elements);
+
+			currentmessageoverlaytext = text;
+			currentmessageoverlaysubtext = subtext;
+		}
+
+		private void HideMessageText(float delay = 0) {
+
+			if (delay > 0) {
+				string oldoverlay = messageoverlay;
+				string beforetext = currentmessageoverlaytext;
+				string beforesub = currentmessageoverlaysubtext;
+				StartCoroutine(DelayHide(delay, oldoverlay, beforetext, beforesub));
+			} else {
+				if (!string.IsNullOrEmpty(messageoverlay))
+					CuiHelper.DestroyUi(player, messageoverlay);
+				currentmessageoverlaytext = string.Empty;
+				currentmessageoverlaysubtext = string.Empty;
+			}
+		}
+
+		private IEnumerator DelayHide(float delay, string oldoverlay, string beforetext, string beforesub) {
+			yield return new WaitForSecondsRealtime(delay);
+
+			if (!string.IsNullOrEmpty(messageoverlay))
+				CuiHelper.DestroyUi(player, messageoverlay);
+			if (beforetext == currentmessageoverlaytext)
+				currentmessageoverlaytext = string.Empty;
+			if (beforesub == currentmessageoverlaysubtext)
+				currentmessageoverlaysubtext = string.Empty;
+		}
+
+		/// <summary>
+		/// Start placing a deployable
+		/// </summary>
+		public static void StartPlacing(BasePlayer basePlayer, Type deployabletype) => Get(basePlayer).StartPlacing(deployabletype);
+
+		/// <summary>
+		/// Hide overlay menu for parent player
+		/// </summary>
+		public void StartPlacing(Type deployabletype) {
+		
+
+			var methodInfo = deployabletype.GetMethod("CanStartPlacing");
+			if (methodInfo != null) {
+				if (!(bool) methodInfo.Invoke(null, new object[] { this }))
+					return;
+			}
+
+			// start placing
+
+
+			HideOverlay();
+
+
+		}
+
+		
 		
 	}
 
@@ -870,14 +989,13 @@ namespace Oxide.Plugins.JTechDeployables {
 	[JInfo(typeof(JTech), "Transport Pipe", "https://vignette.wikia.nocookie.net/play-rust/images/4/4a/Metal_Pipe_icon.png/revision/latest/scale-to-width-down/200")]
 	[JRequirement("wood", 20, "segment")]
 	public class TransportPipe : JDeployable {
-	
 
-
-
-		
+		public static bool CanStartPlacing(UserInfo userInfo) {
+			userInfo.ShowErrorMessage("error message");
+			return true;
+		}
 
 	}
-
 }
 
 namespace Oxide.Plugins.JTechDeployables {

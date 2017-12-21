@@ -5,13 +5,24 @@ using System.Text;
 using Oxide.Core.Libraries.Covalence;
 using Oxide.Core.Plugins;
 using Oxide.Core;
+using System.Reflection;
 
 namespace Oxide.Plugins.JCore {
 
 	public class JDeployableManager {
 
+		// TODO
+		// manage spawned deployables
+		// distributive deployable update
+		// load deployable types
+		// load and spawn deployables from save file (async)
+		// save deployables
+		// clean up deployables on unload
+
 		public static Dictionary<Type, JInfoAttribute> DeployableTypes = new Dictionary<Type, JInfoAttribute>();
 		public static Dictionary<Type, List<JRequirementAttribute>> DeployableTypeRequirements = new Dictionary<Type, List<JRequirementAttribute>>();
+
+		public static Dictionary<int, JDeployable> activeDeployables = new Dictionary<int, JDeployable>();
 
 		/// <summary>
 		/// JDeployable API
@@ -79,16 +90,34 @@ namespace Oxide.Plugins.JCore {
 			return false;
 		}
 
-		// TODO
-		// manage spawned deployables
-		// distributive deployable update
-		// load deployable types
-		// load and spawn deployables from save file (async)
-		// save deployables
-		// clean up deployables on unload
+		private static System.Random IDGenerator = new System.Random();
+		private static int NewUID() {
+			int id = (int) IDGenerator.Next(0, int.MaxValue);
+			if (activeDeployables.ContainsKey(id))
+				return NewUID();
+			else
+				return id;
+		}
 
+		public static bool PlaceDeployable(Type deployabletype, UserInfo userInfo) {
 
+			var instance = Activator.CreateInstance(deployabletype);
 
+			var methodInfo = deployabletype.GetMethod("Place");
+			if (!(methodInfo != null && (bool) methodInfo.Invoke(instance, new object[] { userInfo })))
+				return false;
+
+			var fieldInfo = deployabletype.GetField("Id");
+			if (fieldInfo == null)
+				return false;
+
+			int id = NewUID();
+			fieldInfo.SetValue(instance, id);
+			
+			activeDeployables.Add(id, (JDeployable) instance);
+			
+			return true;
+		}
 
 	}
 }

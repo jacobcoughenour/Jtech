@@ -17,6 +17,15 @@ namespace Oxide.Plugins {
     [Info("JTech", "TheGreatJ", "1.0.0", ResourceId = 2402)]
     class JTech : RustPlugin {
 
+
+		void RegisterDeployables() {
+			JDeployableManager.RegisterJDeployable<JTechDeployables.TransportPipe>();
+			JDeployableManager.RegisterJDeployable<JTechDeployables.Assembler>();
+			//JDeployableManager.RegisterJDeployable<JTechDeployables.TrashCan>();
+			//JDeployableManager.RegisterJDeployable<JTechDeployables.AutoFarm>();
+		}
+
+
 		#region Oxide Hooks
 
 		void Init() {
@@ -39,14 +48,10 @@ namespace Oxide.Plugins {
 			// load deployables from save data
 			// Put loaded message
 
-			JDeployableManager.RegisterJDeployable<JTechDeployables.TransportPipe>();
-			JDeployableManager.RegisterJDeployable<JTechDeployables.Assembler>();
-			//JDeployableManager.RegisterJDeployable<JTechDeployables.TrashCan>();
-			//JDeployableManager.RegisterJDeployable<JTechDeployables.AutoFarm>();
+
+			RegisterDeployables();
 		}
-
 		
-
 		void Unload() {
 
 			// TODO
@@ -57,7 +62,7 @@ namespace Oxide.Plugins {
 			var users = UnityEngine.Object.FindObjectsOfType<UserInfo>();
 			if (users != null) {
 				foreach (UserInfo go in users) {
-					go.HideOverlay();
+					go.DestroyCui();
 					GameObject.Destroy(go);
 				}
 			}
@@ -115,7 +120,9 @@ namespace Oxide.Plugins {
 			// TODO
 			// open menu if deployable
 
-			ListComponentsDebug(player, hit.HitEntity);
+			UserInfo.OnHammerHit(player, hit);
+
+			//ListComponentsDebug(player, hit.HitEntity);
 		}
 
 		#endregion
@@ -489,6 +496,16 @@ namespace Oxide.Plugins.JCore {
 
 namespace Oxide.Plugins.JCore {
 
+	public interface IUpdateable {
+
+		void Update(int TickDelta);
+		
+	}
+
+}
+
+namespace Oxide.Plugins.JCore {
+
 	public class JDeployable {
 
 		// TODO
@@ -497,6 +514,33 @@ namespace Oxide.Plugins.JCore {
 		// cui menu
 		// spawn/destroy 
 		// load/save
+
+		public int Id;
+		public ulong ownerId;
+		public string ownerName;
+		public bool isEnabled;
+		public float health;
+
+		private BaseEntity MainParent;
+		private List<BaseEntity> ChildEntities = new List<BaseEntity>();
+
+		public void SetMainParent(BaseEntity baseEntity) {
+			// TODO attach a component here
+
+			MainParent = baseEntity;
+			MainParent.enableSaving = false;
+		}
+
+		public void AddChildEntity(BaseEntity baseEntity) {
+			// TODO attach a component here
+
+			baseEntity.SetParent(baseEntity);
+			baseEntity.enableSaving = false;
+			ChildEntities.Add(baseEntity);
+		}
+		
+		
+		#region Placing
 
 		/// <summary>
 		/// Can User start placing this deployable?
@@ -508,6 +552,55 @@ namespace Oxide.Plugins.JCore {
 			return true;
 		}
 
+		/// <summary>
+		/// Called when player starts placing this deployable.
+		/// Use this for displaying instructions via userInfo.ShowMessage().
+		/// To stop placing you can either call userInfo.DonePlacing() or userInfo.CancelPlacing().
+		/// </summary>
+		public static void OnStartPlacing(UserInfo userInfo) {
+
+		}
+
+		/// <summary>
+		/// Called after userInfo.DonePlacing() or userInfo.CancelPlacing().
+		/// Use this to clean up anything left over from placing your deployable (visual aids, placeholder items, etc).
+		/// </summary>
+		public static void OnEndPlacing(UserInfo userInfo) {
+
+		}
+
+		/// <summary>
+		/// Called when player is placing this deployable and hits an entity with a hammer.
+		/// Use this if you want the player to select existing entities.
+		/// Use userInfo.placingdata to store selected entities or other data.
+		/// </summary>
+		public static void OnPlacingHammerHit(UserInfo userInfo, HitInfo hit) {
+
+		}
+		
+		/// <summary>
+		/// Spawn a deployable from placing command and set default values.
+		/// </summary>
+		/// <returns>If successfully placed</returns>
+		public virtual bool Place(UserInfo userInfo) {
+			// set deployable variables here
+			return Spawn();
+		}
+
+		#endregion
+		
+
+		public virtual bool Spawn() {
+			// spawn from variables
+			return false;
+		}
+
+
+		public virtual void Update(int TickDelta) {
+
+		}
+		
+
 	}
 
 }
@@ -516,8 +609,18 @@ namespace Oxide.Plugins.JCore {
 
 	public class JDeployableManager {
 
+		// TODO
+		// manage spawned deployables
+		// distributive deployable update
+		// load deployable types
+		// load and spawn deployables from save file (async)
+		// save deployables
+		// clean up deployables on unload
+
 		public static Dictionary<Type, JInfoAttribute> DeployableTypes = new Dictionary<Type, JInfoAttribute>();
 		public static Dictionary<Type, List<JRequirementAttribute>> DeployableTypeRequirements = new Dictionary<Type, List<JRequirementAttribute>>();
+
+		public static Dictionary<int, JDeployable> activeDeployables = new Dictionary<int, JDeployable>();
 
 		/// <summary>
 		/// JDeployable API
@@ -585,16 +688,34 @@ namespace Oxide.Plugins.JCore {
 			return false;
 		}
 
-		// TODO
-		// manage spawned deployables
-		// distributive deployable update
-		// load deployable types
-		// load and spawn deployables from save file (async)
-		// save deployables
-		// clean up deployables on unload
+		private static System.Random IDGenerator = new System.Random();
+		private static int NewUID() {
+			int id = (int) IDGenerator.Next(0, int.MaxValue);
+			if (activeDeployables.ContainsKey(id))
+				return NewUID();
+			else
+				return id;
+		}
 
+		public static bool PlaceDeployable(Type deployabletype, UserInfo userInfo) {
 
+			var instance = Activator.CreateInstance(deployabletype);
 
+			var methodInfo = deployabletype.GetMethod("Place");
+			if (!(methodInfo != null && (bool) methodInfo.Invoke(instance, new object[] { userInfo })))
+				return false;
+
+			var fieldInfo = deployabletype.GetField("Id");
+			if (fieldInfo == null)
+				return false;
+
+			int id = NewUID();
+			fieldInfo.SetValue(instance, id);
+			
+			activeDeployables.Add(id, (JDeployable) instance);
+			
+			return true;
+		}
 
 	}
 }
@@ -616,6 +737,12 @@ namespace Oxide.Plugins.JCore {
 		private string currentmessageoverlaytext;
 		private string currentmessageoverlaysubtext;
 		private bool isOverlayOpen;
+		private Coroutine MessageTextShow;
+		private Coroutine MessageTextHide;
+
+		private bool isPlacing;
+		private Type placingType;
+		public List<BaseEntity> placingSelected;
 
 		/// <summary>
 		/// Get/create UserInfo from a BasePlayer.
@@ -625,15 +752,17 @@ namespace Oxide.Plugins.JCore {
 		}
 
 		void Awake() {
-
 			player = GetComponent<BasePlayer>();
 			input = player.serverInput;
 			enabled = true;
 			lastActiveItem = 0;
 			isOverlayOpen = false;
-
 		}
 
+
+		/// <summary>
+		/// MonoBehavior Update
+		/// </summary>
 		void Update() {
 
 			// TODO detect when on a pipe and set violationlevel to 0
@@ -660,11 +789,41 @@ namespace Oxide.Plugins.JCore {
 			
 		}
 
+		#region Hooks
+
+		/// <summary>
+		/// When player's held item is changed.
+		/// </summary>
 		private void OnPlayerActiveItemChanged() {
 			var item = player.GetActiveItem();
 			isHoldingHammer = (item != null && item.info != null && (item.info.name == "hammer.item"));
+
+			// TODO if change from placeholder item, EndPlacing()
 		}
 
+		/// <summary>
+		/// OnHammerHit for this player
+		/// </summary>
+		public static void OnHammerHit(BasePlayer basePlayer, HitInfo hit) => Get(basePlayer).OnHammerHit(hit);
+
+		/// <summary>
+		/// OnHammerHit for this player
+		/// </summary>
+		public void OnHammerHit(HitInfo hit) {
+			if (isPlacing) {
+				placingType.GetMethod("OnPlacingHammerHit")?.Invoke(null, new object[] { this, hit });
+			}
+		}
+
+		#endregion
+
+		#region Crafting
+
+		/// <summary>
+		/// Can player craft deployable
+		/// </summary>
+		/// <param name="jdeployabletype"></param>
+		/// <returns></returns>
 		public bool CanCraftDeployable(Type jdeployabletype) {
 
 			List<JRequirementAttribute> requirements;
@@ -679,13 +838,51 @@ namespace Oxide.Plugins.JCore {
 			return true;
 		}
 
+		/// <summary>
+		/// Player has item amount in their inventory
+		/// </summary>
+		/// <param name="item"></param>
+		/// <param name="iAmount"></param>
+		/// <returns></returns>
 		public bool DoesHaveUsableItem(int item, int iAmount) {
 			int num = 0;
 			foreach (ItemContainer container in player.inventory.crafting.containers)
 				num += container.GetAmount(item, true);
 			return num >= iAmount;
 		}
+		
+		/// <summary>
+		/// Collect required ingredients for deployable
+		/// </summary>
+		/// <param name="jdeployabletype"></param>
+		/// <returns></returns>
+		private void CollectIngredients(Type jdeployabletype) {
+			
+			List<JRequirementAttribute> requirements;
+			JDeployableManager.DeployableTypeRequirements.TryGetValue(jdeployabletype, out requirements);
 
+			List<Item> collect = new List<Item>();
+			
+			foreach (JRequirementAttribute req in requirements) {
+				this.CollectIngredient(req.ItemId, req.ItemAmount, collect);
+				player.Command($"note.inv {req.ItemId} -{req.ItemAmount}");
+			}
+
+			foreach (Item obj in collect)
+				obj.Remove(0.0f);
+		}
+
+		private void CollectIngredient(int item, int amount, List<Item> collect) {
+			foreach (ItemContainer container in player.inventory.crafting.containers) {
+				amount -= container.Take(collect, item, amount);
+				if (amount <= 0)
+					break;
+			}
+		}
+
+		#endregion
+
+		#region CUI
 
 		/// <summary>
 		/// Show overlay menu for the given BasePlayer
@@ -697,6 +894,7 @@ namespace Oxide.Plugins.JCore {
 		/// </summary>
 		public void ShowOverlay() {
 			HideOverlay(); // just in case
+			CancelPlacing(); // cancel placing
 			
 			var elements = new CuiElementContainer();
 
@@ -724,13 +922,52 @@ namespace Oxide.Plugins.JCore {
 		}
 
 		/// <summary>
+		/// Destroy all userinfo cui for the player
+		/// </summary>
+		public void DestroyCui() {
+			HideOverlay();
+			HideMessageText();
+		}
+
+		/// <summary>
+		/// Shows message text for player
+		/// </summary>
+		/// <param name="message">message text</param>
+		/// <param name="submessage">subtext message text</param>
+		/// <param name="duration">duration of the message</param>
+		/// <param name="delay">delay before showing the message</param>
+		public void ShowMessage(string message, string subtext = "", float duration = -1f, float delay = 0f) {
+
+			if (MessageTextShow != null)
+				StopCoroutine(MessageTextShow); // cancel previous delayed show
+
+			if (delay > 0) {
+				MessageTextShow = StartCoroutine(DelayShow(delay, message, subtext, duration));
+			} else {
+				ShowMessageText(message, subtext);
+			}
+			
+			if (duration > 0)
+				HideMessageText(duration);
+		}
+
+		private IEnumerator DelayShow(float delay, string message, string subtext, float duration) {
+			yield return new WaitForSecondsRealtime(delay);
+
+			ShowMessage(message, subtext, duration);
+
+			MessageTextShow = null;
+		}
+
+		/// <summary>
 		/// Shows error message text for player
 		/// </summary>
 		/// <param name="message">message text</param>
 		/// <param name="submessage">subtext message text</param>
-		public void ShowErrorMessage(string message, string subtext = "") {
-			ShowMessageText(message, subtext);
-			HideMessageText(2f);
+		public void ShowErrorMessage(string message, string subtext = "", float duration = 2f) {
+			ShowMessageText(message, subtext, "1 0.5 0.2 1");
+			if (duration > 0)
+				HideMessageText(duration);
 		}
 
 		private void ShowMessageText(string text, string subtext = "", string textcolor = "1.0 1.0 1.0 1.0") {
@@ -759,13 +996,19 @@ namespace Oxide.Plugins.JCore {
 			currentmessageoverlaysubtext = subtext;
 		}
 
-		private void HideMessageText(float delay = 0) {
+		/// <summary>
+		/// Hide current message text for player with optional delay
+		/// </summary>
+		public void HideMessageText(float delay = 0) {
+
+			if (MessageTextHide != null)
+				StopCoroutine(MessageTextHide); // cancel previous delayed hide
 
 			if (delay > 0) {
 				string oldoverlay = messageoverlay;
 				string beforetext = currentmessageoverlaytext;
 				string beforesub = currentmessageoverlaysubtext;
-				StartCoroutine(DelayHide(delay, oldoverlay, beforetext, beforesub));
+				MessageTextHide = StartCoroutine(DelayHide(delay, oldoverlay, beforetext, beforesub));
 			} else {
 				if (!string.IsNullOrEmpty(messageoverlay))
 					CuiHelper.DestroyUi(player, messageoverlay);
@@ -783,35 +1026,86 @@ namespace Oxide.Plugins.JCore {
 				currentmessageoverlaytext = string.Empty;
 			if (beforesub == currentmessageoverlaysubtext)
 				currentmessageoverlaysubtext = string.Empty;
+
+			MessageTextHide = null;
 		}
 
+		#endregion
+
+		#region Deployable Placing
+
 		/// <summary>
-		/// Start placing a deployable
+		/// Start placing deployable
 		/// </summary>
 		public static void StartPlacing(BasePlayer basePlayer, Type deployabletype) => Get(basePlayer).StartPlacing(deployabletype);
 
 		/// <summary>
-		/// Hide overlay menu for parent player
+		/// Start placing deployable
 		/// </summary>
 		public void StartPlacing(Type deployabletype) {
-		
 
+			// ask deployable type if we can start placing it
 			var methodInfo = deployabletype.GetMethod("CanStartPlacing");
 			if (methodInfo != null) {
 				if (!(bool) methodInfo.Invoke(null, new object[] { this }))
 					return;
 			}
 
-			// start placing
-
-
 			HideOverlay();
+			
+			isPlacing = true;
+			placingType = deployabletype;
+			placingSelected = new List<BaseEntity>();
 
-
+			var startplacingmethod = deployabletype.GetMethod("OnStartPlacing");
+			if (startplacingmethod != null)
+				startplacingmethod.Invoke(null, new object[] { this });
+			
 		}
 
-		
-		
+		private void EndPlacing() {
+
+			if (!isPlacing)
+				return;
+
+			if (placingType != null) {
+				var methodInfo = placingType.GetMethod("OnEndPlacing");
+				if (methodInfo != null)
+					methodInfo.Invoke(null, new object[] { this });
+			}
+
+			isPlacing = false;
+			placingType = null;
+			placingSelected.Clear();
+
+			HideMessageText();
+		}
+
+		/// <summary>
+		/// Cancel placing deployable
+		/// </summary>
+		public void CancelPlacing() {
+			EndPlacing();
+		}
+
+		/// <summary>
+		/// Done placing deployable
+		/// </summary>
+		public void DonePlacing() {
+			
+			if (!isPlacing)
+				return;
+			
+			if (CanCraftDeployable(placingType) && JDeployableManager.PlaceDeployable(placingType, this)) { // if player can craft it and it is placed
+
+				CollectIngredients(placingType); // consume ingredients from player's inventory
+			}
+			
+			EndPlacing();
+		}
+
+		#endregion
+
 	}
 
 }
@@ -966,7 +1260,7 @@ namespace Oxide.Plugins.JTechDeployables {
 	[JRequirement("vending.machine"), JRequirement("gears", 5), JRequirement("metal.refined", 20)]
 
 	public class Assembler : JDeployable {
-
+		
 
 
 	}
@@ -988,13 +1282,217 @@ namespace Oxide.Plugins.JTechDeployables {
 
 	[JInfo(typeof(JTech), "Transport Pipe", "https://vignette.wikia.nocookie.net/play-rust/images/4/4a/Metal_Pipe_icon.png/revision/latest/scale-to-width-down/200")]
 	[JRequirement("wood", 20, "segment")]
+
 	public class TransportPipe : JDeployable {
 
+		public enum Mode {
+			SingleStack, // one stack per item
+			MultiStack,  // multiple stacks per item
+			SingleItem   // only one of each item
+		}
+		
+		public StorageContainer sourcecont;
+		public StorageContainer destcont;
+		public string sourceContainerIconUrl;
+		public string endContainerIconUrl;
+
+		public uint sourcechild = 0;
+		public uint destchild = 0;
+
+		public Vector3 startPosition;
+		public Vector3 endPosition;
+		private float distance;
+
+		public bool isWaterPipe;
+		public BuildingGrade.Enum grade;
+		public bool autostarter;
+		public Mode mode;
+		
+		private static float pipesegdist = 3;
+		private static Vector3 pipefightoffset = new Vector3(0.0001f, 0, 0.0001f); // every other pipe segment is offset by this to remove z fighting
+
+
 		public static bool CanStartPlacing(UserInfo userInfo) {
-			userInfo.ShowErrorMessage("error message");
 			return true;
 		}
 
+		public static void OnStartPlacing(UserInfo userInfo) {
+			userInfo.placingSelected = new List<BaseEntity>() { null, null };
+
+			userInfo.ShowMessage("Select first container");
+		}
+ 
+		public static void OnPlacingHammerHit(UserInfo userInfo, HitInfo hit) {
+
+			StorageContainer cont = hit.HitEntity.GetComponent<StorageContainer>();
+
+			if (cont != null) { // we hit a StorageContainer
+				
+				if (checkContPrivilege(cont, userInfo.player)) { // permission for this container
+
+					if (userInfo.placingSelected[0] == null) { // if this is the first we hit
+						userInfo.placingSelected[0] = hit.HitEntity;
+
+						userInfo.ShowMessage("Select second container");
+
+					} else if (userInfo.placingSelected[1] == null) { // if this is the second we hit
+
+						if (userInfo.placingSelected[0] != hit.HitEntity) { // if it's not the same as the first one
+
+							if (userInfo.placingSelected[0] is LiquidContainer == hit.HitEntity is LiquidContainer) { // if they are the same type of container
+
+								userInfo.placingSelected[1] = hit.HitEntity;
+
+								userInfo.ShowMessage("Selection finished");
+								userInfo.DonePlacing();
+
+							} else {
+								userInfo.ShowErrorMessage("same container error");
+								userInfo.ShowMessage("Select second container", "", -1, 2f);
+							}
+						} else {
+							userInfo.ShowErrorMessage("same container error");
+							userInfo.ShowMessage("Select second container", "", -1, 2f);
+						}
+					}
+				} else {
+					// TODO no privilege error message
+				}
+				
+			}
+		}
+
+		public override bool Place(UserInfo userInfo) {
+
+			sourcecont = userInfo.placingSelected[0].GetComponent<StorageContainer>();
+			destcont = userInfo.placingSelected[1].GetComponent<StorageContainer>();
+
+			grade = BuildingGrade.Enum.Twigs;
+			autostarter = false;
+			mode = Mode.MultiStack;
+
+			return Spawn();
+		}
+
+		public override bool Spawn() {
+
+			//sourceContainerIconUrl;
+			//endContainerIconUrl;
+
+			isWaterPipe = sourcecont is LiquidContainer;
+
+			startPosition = sourcecont.CenterPoint() + containeroffset(sourcecont);
+			endPosition = destcont.CenterPoint() + containeroffset(destcont);
+
+			distance = Vector3.Distance(startPosition, endPosition);
+			Quaternion rotation = Quaternion.LookRotation(endPosition - startPosition) * Quaternion.Euler(90, 0, 0);
+
+			//isStartable();
+
+			// TODO spawn pillars
+
+			int segments = (int) Mathf.Ceil(distance / pipesegdist);
+			float segspace = (distance - pipesegdist) / (segments - 1);
+
+			for (int i = 0; i < segments; i++) {
+				
+				// create pillar
+
+				BaseEntity ent;
+
+				if (i == 0) {
+					// the position thing centers the pipe if there is only one segment
+					ent = GameManager.server.CreateEntity("assets/prefabs/building core/pillar/pillar.prefab", (segments == 1) ? (startPosition + ((rotation * Vector3.up) * ((distance - pipesegdist) * 0.5f))) : startPosition, rotation);
+					SetMainParent(ent);
+				} else {
+					ent = GameManager.server.CreateEntity("assets/prefabs/building core/pillar/pillar.prefab", Vector3.up * (segspace * i) + ((i % 2 == 0) ? Vector3.zero : pipefightoffset));
+
+				}
+
+				ent.enableSaving = false;
+
+				BuildingBlock block = ent.GetComponent<BuildingBlock>();
+
+				if (block != null) {
+					block.grounded = true;
+					block.grade = grade;
+					block.enableSaving = false;
+					block.Spawn();
+					block.SetHealthToMax();
+				}
+				
+
+				// xmas lights
+
+				//BaseEntity lights = GameManager.server.CreateEntity("assets/prefabs/misc/xmas/christmas_lights/xmas.lightstring.deployed.prefab", (Vector3.up * pipesegdist * 0.5f) + (Vector3.forward * 0.13f) + (Vector3.up * (segspace * i) + ((i % 2 == 0) ? Vector3.zero : pipefightoffset)), Quaternion.Euler(0, -60, 90));
+				//lights.enableSaving = false;
+				//lights.Spawn();
+				//lights.SetParent(mainparent);
+				//jPipeSegChildLights.Attach(lights, this);
+
+				if (i != 0)
+					AddChildEntity(ent);
+
+			}
+
+			return false;
+		}
+
+
+
+		private static bool checkContPrivilege(StorageContainer cont, BasePlayer p) => cont.CanOpenLootPanel(p) && checkBuildingPrivilege(p);
+
+		private static bool checkBuildingPrivilege(BasePlayer p) {
+			//if (permission.UserHasPermission(p.UserIDString, "jpipes.admin"))
+			//	return true;
+			return p.CanBuild();
+		}
+
+		//private static bool checkPipeOverlap(StorageContainer start, jPipeData data) {
+		//	uint s = getcontfromid(data.s, data.cs).net.ID;
+		//	uint e = getcontfromid(data.d, data.cd).net.ID;
+
+		//	foreach (var p in rps)
+		//		if ((p.Value.sourcecont.net.ID == s && p.Value.destcont.net.ID == e) || (p.Value.sourcecont.net.ID == e && p.Value.destcont.net.ID == s))
+		//			return true;
+		//	return false;
+		//}
+
+		private static Vector3 containeroffset(BaseEntity e) {
+			if (e is BoxStorage)
+				return Vector3.zero;
+			else if (e is BaseOven) {
+				string panel = e.GetComponent<BaseOven>().panelName;
+
+				if (panel == "largefurnace")
+					return Vector3.up * -1.5f;
+				else if (panel == "smallrefinery")
+					return e.transform.rotation * new Vector3(-1, 0, -0.1f);
+				else if (panel == "bbq")
+					return Vector3.up * 0.03f;
+				else
+					return Vector3.up * -0.3f;
+				//} else if (e is ResourceExtractorFuelStorage) {
+				//if (e.GetComponent<StorageContainer>().panelName == "fuelstorage") {
+				//    return contoffset.pumpfuel;
+				//} else {
+				//    return e.transform.rotation * contoffset.pumpoutput;
+				//}
+			} else if (e is AutoTurret) {
+				return Vector3.up * -0.58f;
+			} else if (e is SearchLight) {
+				return Vector3.up * -0.5f;
+			} else if (e is WaterCatcher) {
+				return Vector3.up * -0.6f;
+			} else if (e is LiquidContainer) {
+				if (e.GetComponent<LiquidContainer>()._collider.ToString().Contains("purifier"))
+					return Vector3.up * 0.25f;
+				return Vector3.up * 0.2f;
+			}
+			return Vector3.zero;
+		}
+		private static bool isStartable(BaseEntity e, int destchildid) => e is BaseOven || e is Recycler || destchildid == 2;
+		
 	}
 }
 

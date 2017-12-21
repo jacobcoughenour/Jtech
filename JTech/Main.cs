@@ -14,6 +14,15 @@ namespace Oxide.Plugins {
     [Info("JTech", "TheGreatJ", "1.0.0", ResourceId = 2402)]
     class JTech : RustPlugin {
 
+
+		void RegisterDeployables() {
+			JDeployableManager.RegisterJDeployable<JTechDeployables.TransportPipe>();
+			JDeployableManager.RegisterJDeployable<JTechDeployables.Assembler>();
+			//JDeployableManager.RegisterJDeployable<JTechDeployables.TrashCan>();
+			//JDeployableManager.RegisterJDeployable<JTechDeployables.AutoFarm>();
+		}
+
+
 		#region Oxide Hooks
 
 		void Init() {
@@ -36,14 +45,10 @@ namespace Oxide.Plugins {
 			// load deployables from save data
 			// Put loaded message
 
-			JDeployableManager.RegisterJDeployable<JTechDeployables.TransportPipe>();
-			JDeployableManager.RegisterJDeployable<JTechDeployables.Assembler>();
-			//JDeployableManager.RegisterJDeployable<JTechDeployables.TrashCan>();
-			//JDeployableManager.RegisterJDeployable<JTechDeployables.AutoFarm>();
+
+			RegisterDeployables();
 		}
-
 		
-
 		void Unload() {
 
 			// TODO
@@ -54,7 +59,7 @@ namespace Oxide.Plugins {
 			var users = UnityEngine.Object.FindObjectsOfType<UserInfo>();
 			if (users != null) {
 				foreach (UserInfo go in users) {
-					go.HideOverlay();
+					go.DestroyCui();
 					GameObject.Destroy(go);
 				}
 			}
@@ -112,7 +117,9 @@ namespace Oxide.Plugins {
 			// TODO
 			// open menu if deployable
 
-			ListComponentsDebug(player, hit.HitEntity);
+			UserInfo.OnHammerHit(player, hit);
+
+			//ListComponentsDebug(player, hit.HitEntity);
 		}
 
 		#endregion

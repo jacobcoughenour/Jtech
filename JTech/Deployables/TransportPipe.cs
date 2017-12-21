@@ -164,7 +164,7 @@ namespace Oxide.Plugins.JTechDeployables {
 
 			}
 
-			return false;
+			return true;
 		}
 
 

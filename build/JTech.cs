@@ -1260,7 +1260,7 @@ namespace Oxide.Plugins.JTechDeployables {
 	[JRequirement("vending.machine"), JRequirement("gears", 5), JRequirement("metal.refined", 20)]
 
 	public class Assembler : JDeployable {
-		
+
 
 
 	}
@@ -1435,7 +1435,7 @@ namespace Oxide.Plugins.JTechDeployables {
 
 			}
 
-			return false;
+			return true;
 		}
 
 

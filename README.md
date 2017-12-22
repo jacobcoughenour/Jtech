@@ -1,5 +1,6 @@
-#![JTech](https://i.imgur.com/4vq4FiS.png)
-####An industrial automation overhaul for the game [Rust](https://playrust.com) using [Oxide](https://github.com/OxideMod/Oxide).
+![JTech](https://i.imgur.com/4vq4FiS.png)
+
+An industrial automation overhaul for the game [Rust](https://playrust.com) using [Oxide](https://github.com/OxideMod/Oxide).
 
 ---
 

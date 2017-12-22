@@ -19,13 +19,11 @@
 	
 	<Target Name="Build">
 
-		
-
 		<!-- Run PluginMerger -->
 		<Exec Command="$(SolutionDir)PluginMerger\PluginMerger\bin\Debug\PluginMerger.exe $(MSBuildProjectDirectory) $(OutputPath)"/>
-		
-		<!-- Copy to server-->
-		<Copy SourceFiles="$(OutputPath)" DestinationFolder="$(ServerOutputDir)"/>
+
+		<!-- Copy to server -->
+		<Copy Condition="$(APPVEYOR) != True" SourceFiles="$(OutputPath)" DestinationFolder="$(ServerOutputDir)"/>
 		
 	</Target>
 </Project>

@@ -6,13 +6,13 @@
 		<When Condition="$(MSBuildProjectName.StartsWith('Ext.'))">
 			<PropertyGroup>
 				<OutputPath>$(SolutionDir)build\include\$(MSBuildProjectName).cs</OutputPath>
-				<ServerOutputDir>$(RustServerDir)\oxide\plugins\include</ServerOutputDir>
+				<ServerOutputDir Condition="'$(RustServerDir)' != ''">$(RustServerDir)\oxide\plugins\include</ServerOutputDir>
 			</PropertyGroup>
 		</When>
 		<Otherwise>
 			<PropertyGroup>
 				<OutputPath>$(SolutionDir)build\$(MSBuildProjectName).cs</OutputPath>
-				<ServerOutputDir>$(RustServerDir)\oxide\plugins</ServerOutputDir>
+				<ServerOutputDir Condition="'$(RustServerDir)' != ''">$(RustServerDir)\oxide\plugins</ServerOutputDir>
 			</PropertyGroup>
 		</Otherwise>
 	</Choose>

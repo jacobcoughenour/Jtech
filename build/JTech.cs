@@ -1,3 +1,5 @@
+// header test
+
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -14,17 +16,8 @@ using Oxide.Core;
 
 namespace Oxide.Plugins {
 
-    [Info("JTech", "TheGreatJ", "1.0.0", ResourceId = 2402)]
-    class JTech : RustPlugin {
-
-
-		void RegisterDeployables() {
-			JDeployableManager.RegisterJDeployable<JTechDeployables.TransportPipe>();
-			JDeployableManager.RegisterJDeployable<JTechDeployables.Assembler>();
-			//JDeployableManager.RegisterJDeployable<JTechDeployables.TrashCan>();
-			//JDeployableManager.RegisterJDeployable<JTechDeployables.AutoFarm>();
-		}
-
+	[Info("JTech", "TheGreatJ", "1.0.0", ResourceId = 2402)]
+	class JTech : RustPlugin {
 
 		#region Oxide Hooks
 
@@ -104,6 +97,13 @@ namespace Oxide.Plugins {
 			// save deployables
 		}
 
+		void RegisterDeployables() {
+			JDeployableManager.RegisterJDeployable<JTechDeployables.TransportPipe>();
+			JDeployableManager.RegisterJDeployable<JTechDeployables.Assembler>();
+			//JDeployableManager.RegisterJDeployable<JTechDeployables.TrashCan>();
+			//JDeployableManager.RegisterJDeployable<JTechDeployables.AutoFarm>();
+		}
+
 
 		#region Player
 
@@ -122,7 +122,9 @@ namespace Oxide.Plugins {
 
 			UserInfo.OnHammerHit(player, hit);
 
-			//ListComponentsDebug(player, hit.HitEntity);
+			//PM.DEBUGSTART
+			ListComponentsDebug(player, hit.HitEntity);
+			//PM.DEBUGEND
 		}
 
 		#endregion
@@ -158,9 +160,7 @@ namespace Oxide.Plugins {
 			}
 		}
 
-
-
-		#region Debug tools
+		//PM.DEBUGSTART
 
 		// Lists the ent's components and variables to player's chat
 
@@ -227,7 +227,7 @@ namespace Oxide.Plugins {
 
 		}
 
-		#endregion
+		//PM.DEBUGEND
 	}
 }
 
@@ -475,9 +475,6 @@ namespace Oxide.Plugins.JCore {
 		}
 	}
 
-}
-
-namespace Oxide.Plugins.JCore {
 
 	public static class Data {
 
@@ -492,9 +489,6 @@ namespace Oxide.Plugins.JCore {
 		private static void LoadData<T>(ref T data) => data = Core.Interface.Oxide.DataFileSystem.ReadObject<T>("JTech");
 		private static void SaveData<T>(T data) => Core.Interface.Oxide.DataFileSystem.WriteObject("JTech", data);
 	}
-}
-
-namespace Oxide.Plugins.JCore {
 
 	public interface IUpdateable {
 
@@ -502,9 +496,6 @@ namespace Oxide.Plugins.JCore {
 		
 	}
 
-}
-
-namespace Oxide.Plugins.JCore {
 
 	public class JDeployable {
 
@@ -603,9 +594,6 @@ namespace Oxide.Plugins.JCore {
 
 	}
 
-}
-
-namespace Oxide.Plugins.JCore {
 
 	public class JDeployableManager {
 
@@ -718,9 +706,6 @@ namespace Oxide.Plugins.JCore {
 		}
 
 	}
-}
-
-namespace Oxide.Plugins.JCore {
 
 	public class UserInfo : MonoBehaviour {
 
@@ -1108,9 +1093,6 @@ namespace Oxide.Plugins.JCore {
 
 	}
 
-}
-
-namespace Oxide.Plugins.JCore {
 
 	[AttributeUsage(AttributeTargets.Class)]
 	public class JInfoAttribute : Attribute {
@@ -1131,9 +1113,6 @@ namespace Oxide.Plugins.JCore {
 			this.IconUrl = iconUrl;
 		}
 	}
-}
-
-namespace Oxide.Plugins.JCore {
 
 	[AttributeUsage(AttributeTargets.Class, AllowMultiple = true)]
 	public class JRequirementAttribute : Attribute {
@@ -1264,9 +1243,6 @@ namespace Oxide.Plugins.JTechDeployables {
 
 
 	}
-}
-
-namespace Oxide.Plugins.JTechDeployables {
 
 	[JInfo(typeof(JTech), "Auto Farm", "https://i.imgur.com/lEXshkx.png")]
 	[JRequirement("scrap", 10)]
@@ -1276,9 +1252,6 @@ namespace Oxide.Plugins.JTechDeployables {
 
 
 	}
-}
-
-namespace Oxide.Plugins.JTechDeployables {
 
 	[JInfo(typeof(JTech), "Transport Pipe", "https://vignette.wikia.nocookie.net/play-rust/images/4/4a/Metal_Pipe_icon.png/revision/latest/scale-to-width-down/200")]
 	[JRequirement("wood", 20, "segment")]
@@ -1494,9 +1467,6 @@ namespace Oxide.Plugins.JTechDeployables {
 		private static bool isStartable(BaseEntity e, int destchildid) => e is BaseOven || e is Recycler || destchildid == 2;
 		
 	}
-}
-
-namespace Oxide.Plugins.JTechDeployables {
 
 	[JInfo(typeof(JTech), "Trash Can", "https://i.imgur.com/lEXshkx.png")]
 	[JRequirement("scrap", 10)]

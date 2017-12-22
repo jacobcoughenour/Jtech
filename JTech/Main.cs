@@ -11,17 +11,8 @@ using Oxide.Plugins.JCore;
 
 namespace Oxide.Plugins {
 
-    [Info("JTech", "TheGreatJ", "1.0.0", ResourceId = 2402)]
-    class JTech : RustPlugin {
-
-
-		void RegisterDeployables() {
-			JDeployableManager.RegisterJDeployable<JTechDeployables.TransportPipe>();
-			JDeployableManager.RegisterJDeployable<JTechDeployables.Assembler>();
-			//JDeployableManager.RegisterJDeployable<JTechDeployables.TrashCan>();
-			//JDeployableManager.RegisterJDeployable<JTechDeployables.AutoFarm>();
-		}
-
+	//PM.INSERT(PluginInfo)
+	class JTech : RustPlugin {
 
 		#region Oxide Hooks
 
@@ -101,6 +92,13 @@ namespace Oxide.Plugins {
 			// save deployables
 		}
 
+		void RegisterDeployables() {
+			JDeployableManager.RegisterJDeployable<JTechDeployables.TransportPipe>();
+			JDeployableManager.RegisterJDeployable<JTechDeployables.Assembler>();
+			//JDeployableManager.RegisterJDeployable<JTechDeployables.TrashCan>();
+			//JDeployableManager.RegisterJDeployable<JTechDeployables.AutoFarm>();
+		}
+
 
 		#region Player
 
@@ -119,7 +117,9 @@ namespace Oxide.Plugins {
 
 			UserInfo.OnHammerHit(player, hit);
 
-			//ListComponentsDebug(player, hit.HitEntity);
+			//PM.DEBUGSTART
+			ListComponentsDebug(player, hit.HitEntity);
+			//PM.DEBUGEND
 		}
 
 		#endregion
@@ -155,9 +155,7 @@ namespace Oxide.Plugins {
 			}
 		}
 
-
-
-		#region Debug tools
+		//PM.DEBUGSTART
 
 		// Lists the ent's components and variables to player's chat
 
@@ -224,6 +222,6 @@ namespace Oxide.Plugins {
 
 		}
 
-		#endregion
+		//PM.DEBUGEND
 	}
 }

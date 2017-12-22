@@ -4,76 +4,167 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Xml.Linq;
 
 namespace PluginMerger {
 
     internal class Program {
 
         private readonly static Regex isUsingReg;
-        private readonly static Regex isNamespaceReg;
+		private readonly static string pminsert = "//PM.INSERT(";
+		private readonly static string pmdebug = "//PM.DEBUGENABLE";
+		private readonly static string pmdebugstart = "//PM.DEBUGSTART";
+		private readonly static string pmdebugend = "//PM.DEBUGEND";
 
-        static Program() {
-
+		static Program() {
             Program.isUsingReg = new Regex("^using\\s+?[^\\(]+\\;$");
-            Program.isNamespaceReg = new Regex("^using\\s+(.+?);$");
         }
 
         public Program() {}
 
         private static string GetNameSpace(string line) {
-            return Program.isNamespaceReg.Match(line).Groups[1].Value;
-        }
+			return line.Trim(' ', '{').Remove(0, "namespace ".Length);
+		}
         
         private static bool IsUsingLine(string line) {
             return Program.isUsingReg.IsMatch(line);
         }
 
-        private static int Main(string[] args) {
+		private static int Main(string[] args) {
 
-            Console.WriteLine(string.Concat("Args: ", string.Join("\n", args), "\n"));
-            if ((int)args.Length != 2) {
-                Console.WriteLine("Usage: PluginMerger.exe \"Source\" \"Target\".");
-                return 1;
-            }
+			// Console.WriteLine(string.Concat("[PluginMerger] Args: ", string.Join(", ", args), "\n"));
 
-            using (StreamWriter streamWriter = File.CreateText(args[1])) { // write file to target (args[1])
+			if ((int) args.Length != 2) {
+				Console.WriteLine("Usage: PluginMerger.exe \"Source\" \"Target\".");
+				return 1;
+			}
+
+			// TODO parse xml file
+
+			//XElement PluginConfigFile = XElement.Load($"{args[0]}\\plugin.config");
+			//PluginConfigFile.Ancestors();
+
+			//Console.WriteLine(PluginConfigFile);
+
+			using (StreamWriter streamWriter = File.CreateText(args[1])) { // write file to target (args[1])
 
 				StringBuilder stringBuilder = new StringBuilder();
 
-				List<string> usingStrings = new List<string>();
-                // TODO: Dictionary of namespaces and the strings they contain
+				HashSet<string> usings = new HashSet<string>();
+				Dictionary<string, List<string>> namespaces = new Dictionary<string, List<string>>();
 
-                string[] files = Directory.GetFiles(args[0], "*.cs", SearchOption.AllDirectories);
+				bool isDebugEnabled = false;
 
-                for (int i = 0; i < (int)files.Length; i++) { // for each file in directory
+                var files = Directory.EnumerateFiles(args[0], "*.cs", SearchOption.AllDirectories)
+					.Where(s => !s.EndsWith("AssemblyInfo.cs"));
 
-                    string curfile = files[i];
-                    if (Path.GetFileName(curfile) != "AssemblyInfo.cs") { // ignore AssemblyInfo.cs
-                        
-                        List<string> strs1 = new List<string>(File.ReadAllLines(curfile));
-                        List<string> list = strs1.ToList<string>(); // TODO: why is this here?
+				Console.WriteLine($"[PluginMerger] Found {files.Count()} .cs files in {args[0]}");
 
-                        int lineoffset = 0; // count lines removed
-                        for (int j = 0; j < list.Count; j++) { // for each line in curfile
+				// look for PM.DEBUG flag
+				foreach (string curfile in files) {
+					foreach (string line in new List<string>(File.ReadAllLines(curfile))) { // for each line in file
+						if (line.Contains(pmdebug)) {
+							Console.WriteLine($"[PluginMerger] PM.DEBUGENABLED");
+							isDebugEnabled = true;
+							break;
+						}
+					}
+				}
+				
+				foreach (string curfile in files) { // for each file in directory
 
-                            string item = list[j];
-                            if (Program.IsUsingLine(item)) {
+					Console.WriteLine($"[PluginMerger] Parsing {curfile}");
+					
+					string curnamespace = string.Empty;
+					int bracketdepth = 0;
+					bool insideDebugBlock = false;
 
-                                Program.GetNameSpace(item); // TODO: why is this here?
-                                if (!usingStrings.Contains(item)) 
-                                    usingStrings.Add(item);
+					foreach (string line in new List<string>(File.ReadAllLines(curfile))) { // for each line in file
 
-                                strs1.RemoveAt(j - lineoffset); // TODO: instead of removing, just add to new list
-                                lineoffset++;
-                            }
-                        }
-                        stringBuilder.AppendLine(string.Join("\n", strs1)); // append lines
-                    }
-                }
-                stringBuilder.Insert(0, string.Concat(string.Join("\n", usingStrings), "\n")); // add usingStrings to the top
-                streamWriter.Write(stringBuilder.ToString()); // write to file
+						int newdepth = bracketdepth + (line.Count(f => f == '{') - line.Count(f => f == '}'));
+						
+						if (isDebugEnabled && line.Contains(pmdebugstart)) {
+							insideDebugBlock = true;
+						}
+
+						if (!insideDebugBlock) {
+							if (bracketdepth == 0) {
+								if (line.TrimStart(' ').StartsWith("namespace ")) { // if namespace
+
+									curnamespace = GetNameSpace(line); // extract the name of the namespace
+
+									if (!namespaces.ContainsKey(curnamespace)) { // if this namespace hasn't already been registered
+
+										namespaces.Add(curnamespace, new List<string>());
+										Console.WriteLine($"[PluginMerger] Added Namespace {curnamespace}");
+									}
+
+								} else if (IsUsingLine(line)) // if using
+									usings.Add(line);
+
+							} else if (newdepth != 0) {
+
+								if (line.Contains(pminsert)) {
+
+									string insertname = Regex.Match(line, @"\(([^)]*)\)").Groups[1].Value;
+									string indent = line.Substring(0, line.IndexOf('/'));
+
+									Console.WriteLine($"[PluginMerger] Inserted {insertname}");
+
+									if (insertname == "PluginInfo") {
+										namespaces[curnamespace].Add($"{indent}[Info(\"JTech\", \"TheGreatJ\", \"1.0.0\", ResourceId = 2402)]");
+									}
+
+								} else {
+									namespaces[curnamespace].Add(line); // add line to namespace
+								}
+							}
+						}
+
+						if (isDebugEnabled && line.Contains(pmdebugend)) {
+							insideDebugBlock = false;
+						}
+						
+						bracketdepth = newdepth;
+					}
+					
+				}
+
+				//[Info("JTech", "TheGreatJ", "1.0.0", ResourceId = 2402)]
+
+				// create header
+				List<string> header = new List<string>() {
+					"header test"
+				};
+
+
+				// build the output file
+
+
+
+				// add header
+				foreach (string hs in header) {
+					stringBuilder.AppendLine($"// {hs}\n");
+				}
+
+				// add using lines
+				stringBuilder.AppendLine(string.Join("\n", usings));
+
+				// add code lines by namespace
+				foreach (var ns in namespaces) {
+					stringBuilder.AppendLine($"\nnamespace {ns.Key} {"{"}");
+					stringBuilder.AppendLine(string.Join("\n", ns.Value));
+					stringBuilder.AppendLine("}");
+				}
+
+				// write to file
+				streamWriter.Write(stringBuilder.ToString()); 
             }
-            return 0;
+
+			Console.WriteLine($"[PluginMerger] Saved to {args[1]}");
+			Console.WriteLine($"[PluginMerger] Done!");
+
+			return 0;
         }
     }
 }

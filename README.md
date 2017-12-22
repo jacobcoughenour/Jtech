@@ -2,6 +2,8 @@
 
 An industrial automation overhaul for the game [Rust](https://playrust.com) using [Oxide](https://github.com/OxideMod/Oxide).
 
+[![Build status](https://ci.appveyor.com/api/projects/status/64yx2tj8elrdhhm0?svg=true)](https://ci.appveyor.com/project/jacobcoughenour/jtech)
+
 ---
 
 ### Environment Setup

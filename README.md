@@ -1,7 +1,9 @@
-![JTech](https://i.imgur.com/4vq4FiS.png)
-An industrial automation overhaul for the game [Rust](https://playrust.com) using [Oxide](https://github.com/OxideMod/Oxide).
+#![JTech](https://i.imgur.com/4vq4FiS.png)
+####An industrial automation overhaul for the game [Rust](https://playrust.com) using [Oxide](https://github.com/OxideMod/Oxide).
 
-## Environment Setup
+---
+
+### Environment Setup
 Visual Studio 2017 is recommended
 You can get the Community Edition for free [here](https://www.visualstudio.com/downloads/)
 
@@ -13,6 +15,6 @@ Once you have the server setup, you need to create an *_Environment Variable_* o
 
 Now you can open JTech.sln in Visual Studio and get started!
 
-## Build
+### Building
 
 To build and run JTech on your server, just build the JTech project (Ctrl-Shift-B).  This starts the PluginMerger script that combines all the .cs files to JTech.cs and saves it to the build folder and your server plugins folder.  If you have the your server running, oxide auto reloads the plugin for you.

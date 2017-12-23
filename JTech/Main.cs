@@ -53,7 +53,6 @@ namespace Oxide.Plugins {
 					GameObject.Destroy(go);
 				}
 			}
-
 		}
 
 		// removes anything named UserInfo from the player

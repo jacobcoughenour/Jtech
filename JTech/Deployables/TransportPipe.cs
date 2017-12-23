@@ -113,8 +113,6 @@ namespace Oxide.Plugins.JTechDeployables {
 			if (!(data.Has("sourceid") && data.Has("destid")))
 				return false;
 
-			Debug.Log(data.Get("sourceid"));
-
 			sourceent = (BaseEntity) BaseNetworkable.serverEntities.Find(uint.Parse(data.Get("sourceid")));
 			destent = (BaseEntity) BaseNetworkable.serverEntities.Find(uint.Parse(data.Get("destid")));
 

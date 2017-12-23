@@ -77,6 +77,7 @@ namespace Oxide.Plugins.JCore {
 
 		public void SetMainParent(BaseEntity baseEntity) {
 			// TODO attach a component here
+			baseEntity.gameObject.AddComponent<Child>().parent = this;
 
 			MainParent = baseEntity;
 			MainParent.enableSaving = false;
@@ -88,9 +89,11 @@ namespace Oxide.Plugins.JCore {
 		/// </summary>
 		/// <param name="baseEntity"></param>
 		public void AddChildEntity(BaseEntity baseEntity) {
-			// TODO attach a component here
 			if (MainParent == null)
 				return;
+
+			baseEntity.gameObject.AddComponent<Child>().parent = this;
+
 			baseEntity.SetParent(MainParent);
 			baseEntity.enableSaving = false;
 			ChildEntities.Add(baseEntity);
@@ -110,7 +113,14 @@ namespace Oxide.Plugins.JCore {
 				MainParent.Kill(mode);
 			if (remove) JDeployableManager.RemoveJDeployable(this.Id);
 		}
-		
+
+		public void OnChildKilled() {
+			this.Kill(BaseNetworkable.DestroyMode.Gib);
+		}
+
+		public class Child : MonoBehaviour {
+			public JDeployable parent;
+		}
 		
 		#region Placing
 

@@ -61,30 +61,32 @@ namespace Oxide.Plugins {
 
 		}
 
+		//PM.DEBUGSTART
 		// removes anything named UserInfo from the player
-		//[ConsoleCommand("jtech.clean")]
-		//private void cmdpipechangedir(ConsoleSystem.Arg arg) {
+		[ConsoleCommand("jtech.clean")]
+		private void cmdpipechangedir(ConsoleSystem.Arg arg) {
 
-		//	List<UnityEngine.Object> uis = new List<UnityEngine.Object>();
-		//	foreach (var player in BasePlayer.activePlayerList) {
-		//		foreach (var c in player.GetComponents<Component>()) {
-		//			if (c.GetType().ToString() == "Oxide.Plugins.JTechCore.UserInfo") {
-		//				uis.Add(c);
-		//			}
-		//		}
-		//	}
+			List<UnityEngine.Object> uis = new List<UnityEngine.Object>();
+			foreach (var player in BasePlayer.activePlayerList) {
+				foreach (var c in player.GetComponents<Component>()) {
+					if (c.GetType().ToString() == "Oxide.Plugins.JCore.UserInfo") {
+						uis.Add(c);
+					}
+				}
+			}
 
-		//	foreach (var u in uis) {
-		//		UnityEngine.Object.Destroy(u);
-		//	}
+			foreach (var u in uis) {
+				UnityEngine.Object.Destroy(u);
+			}
 
-		//	Puts($"{uis.Count} destroyed");
+			Puts($"{uis.Count} destroyed");
 
-		//	NextFrame(() => {
-		//		foreach (var player in BasePlayer.activePlayerList)
-		//			UserInfo.Get(player);
-		//	});
-		//}
+			NextFrame(() => {
+				foreach (var player in BasePlayer.activePlayerList)
+					UserInfo.Get(player);
+			});
+		}
+		//PM.DEBUGEND
 
 		void OnNewSave(string filename) {
 			// TODO
@@ -125,6 +127,47 @@ namespace Oxide.Plugins {
 			//PM.DEBUGSTART
 			ListComponentsDebug(player, hit.HitEntity);
 			//PM.DEBUGEND
+		}
+
+		void OnStructureDemolish(BaseCombatEntity entity, BasePlayer player) {
+			JDeployable.Child c = entity.GetComponent<JDeployable.Child>();
+			if (c != null && c.parent != null)
+				c.parent.OnChildKilled();
+		}
+
+		void OnEntityDeath(BaseCombatEntity entity, HitInfo info) {
+			JDeployable.Child c = entity.GetComponent<JDeployable.Child>();
+			if (c != null && c.parent != null)
+				c.parent.OnChildKilled();
+		}
+
+		//void OnEntityKill(BaseNetworkable entity) {
+		//	JDeployable.Child c = entity.GetComponent<JDeployable.Child>();
+		//	if (c != null && c.parent != null)
+		//		c.parent.OnChildKilled();
+		//}
+
+		bool? OnEntityTakeDamage(BaseCombatEntity entity, HitInfo hitInfo) {
+
+			if (entity != null && hitInfo != null) {
+
+				JDeployable.Child c = entity.GetComponent<JDeployable.Child>();
+				if (c != null && c.parent != null) {
+					
+					float damage = hitInfo.damageTypes.Total();
+					if (damage > 0) {
+						
+						float newhealth = entity.health - damage;
+						if (newhealth >= 1f)
+							c.parent.SetHealth(newhealth);
+						else
+							c.parent.OnChildKilled();
+
+					}
+					return true;
+				}
+			}
+			return null;
 		}
 
 		#endregion

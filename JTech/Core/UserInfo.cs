@@ -73,6 +73,13 @@ namespace Oxide.Plugins.JCore {
 			
 		}
 
+		/// <summary>
+		/// Monobehavior OnDestroy
+		/// </summary>
+		void OnDestroy() {
+			DestroyCui();
+		}
+
 		#region Hooks
 
 		/// <summary>

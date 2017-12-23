@@ -124,7 +124,7 @@ namespace Oxide.Plugins.JTechDeployables {
 			float segspace = (distance - pipesegdist) / (segments - 1);
 
 			for (int i = 0; i < segments; i++) {
-				
+
 				// create pillar
 
 				BaseEntity ent;
@@ -135,7 +135,6 @@ namespace Oxide.Plugins.JTechDeployables {
 					SetMainParent(ent);
 				} else {
 					ent = GameManager.server.CreateEntity("assets/prefabs/building core/pillar/pillar.prefab", Vector3.up * (segspace * i) + ((i % 2 == 0) ? Vector3.zero : pipefightoffset));
-
 				}
 
 				ent.enableSaving = false;
@@ -149,7 +148,9 @@ namespace Oxide.Plugins.JTechDeployables {
 					block.Spawn();
 					block.SetHealthToMax();
 				}
-				
+
+				if (i != 0)
+					AddChildEntity(ent);
 
 				// xmas lights
 
@@ -158,9 +159,6 @@ namespace Oxide.Plugins.JTechDeployables {
 				//lights.Spawn();
 				//lights.SetParent(mainparent);
 				//jPipeSegChildLights.Attach(lights, this);
-
-				if (i != 0)
-					AddChildEntity(ent);
 
 			}
 

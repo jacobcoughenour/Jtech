@@ -35,8 +35,7 @@ namespace Oxide.Plugins {
 			// load save data
 			// load deployables from save data
 			// Put loaded message
-
-
+			
 			RegisterDeployables();
 		}
 		

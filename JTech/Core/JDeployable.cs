@@ -30,10 +30,16 @@ namespace Oxide.Plugins.JCore {
 			MainParent.enableSaving = false;
 		}
 
+		/// <summary>
+		/// Parent entity to main parent.
+		/// Note: make sure you .Spawn() the entity first.
+		/// </summary>
+		/// <param name="baseEntity"></param>
 		public void AddChildEntity(BaseEntity baseEntity) {
 			// TODO attach a component here
-
-			baseEntity.SetParent(baseEntity);
+			if (MainParent == null)
+				return;
+			baseEntity.SetParent(MainParent);
 			baseEntity.enableSaving = false;
 			ChildEntities.Add(baseEntity);
 		}

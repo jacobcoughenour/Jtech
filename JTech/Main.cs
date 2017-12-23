@@ -11,7 +11,7 @@ using Oxide.Plugins.JCore;
 
 namespace Oxide.Plugins {
 
-	//PM.INSERT(PluginInfo)
+	//PM.INSERT(PluginInfo, TheGreatJ, http://oxidemod.org/plugins/jpipes.2402/, https://github.com/jacobcoughenour/JTech)
 	class JTech : RustPlugin {
 
 		#region Oxide Hooks

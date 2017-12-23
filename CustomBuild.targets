@@ -18,6 +18,19 @@
 			</PropertyGroup>
 		</Otherwise>
 	</Choose>
+
+	<Choose>
+		<When Condition="$(APPVEYOR) == True">
+			<PropertyGroup>
+				<BuildVersion>$(APPVEYOR_BUILD_VERSION)</BuildVersion>
+			</PropertyGroup>
+		</When>
+		<Otherwise>
+			<PropertyGroup>
+				<BuildVersion>0.0.0</BuildVersion>
+			</PropertyGroup>
+		</Otherwise>
+	</Choose>
 	
 	<Target Name="Build">
 
@@ -25,7 +38,7 @@
 		<MakeDir Directories="$(BuildDir)" Condition="!Exists('$(BuildDir)')"/>
 
 		<!-- Run PluginMerger -->
-		<Exec Command="$(SolutionDir)PluginMerger.exe $(MSBuildProjectDirectory) $(OutputPath)"/>
+		<Exec Command="$(SolutionDir)PluginMerger.exe $(MSBuildProjectDirectory) $(OutputPath) $(MSBuildProjectName) $(BuildVersion)"/>
 
 		<!-- Copy to server -->
 		<Copy Condition="$(APPVEYOR) != True" SourceFiles="$(OutputPath)" DestinationFolder="$(ServerOutputDir)"/>

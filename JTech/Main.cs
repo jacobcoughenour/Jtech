@@ -27,23 +27,28 @@ namespace Oxide.Plugins {
 				foreach (var player in BasePlayer.activePlayerList)
 					UserInfo.Get(player);
 			});
+			
 		}
 		
 		void OnServerInitialized() {
 
 			// TODO
-			// load save data
 			// load deployables from save data
 			// Put loaded message
-			
+
 			RegisterDeployables();
+
+			DataManager.Load();
+			JDeployableManager.LoadDeployables();
 		}
 		
 		void Unload() {
 
 			// TODO
-			// save deployables
-			// unload deployables
+			// unload deployables after save
+
+			OnServerSave();
+			JDeployableManager.UnloadJDeployables();
 
 			// Destroy UserInfo from all the players
 			var users = UnityEngine.Object.FindObjectsOfType<UserInfo>();
@@ -87,8 +92,9 @@ namespace Oxide.Plugins {
 		}
 
 		void OnServerSave() {
-			// TODO
-			// save deployables
+
+			JDeployableManager.SaveJDeployables();
+			DataManager.Save();
 		}
 
 		void RegisterDeployables() {

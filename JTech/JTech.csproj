@@ -241,7 +241,7 @@
     <Compile Include="Core\IUpdateable.cs" />
     <Compile Include="Core\Util\Icons.cs" />
     <Compile Include="Core\Cui.cs" />
-    <Compile Include="Core\Data.cs" />
+    <Compile Include="Core\DataManager.cs" />
     <Compile Include="Core\JDeployable.cs" />
     <Compile Include="Core\JDeployableManager.cs" />
     <Compile Include="Core\UserInfo.cs" />

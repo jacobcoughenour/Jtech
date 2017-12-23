@@ -112,7 +112,7 @@ namespace PluginMerger {
 									if (insertargs[0] == "PluginInfo") {
 										pluginauthor = insertargs[1];
 										pluginurl = insertargs[2];
-										pluginresourceid = Regex.Match(pluginurl, "([0-9]{4})").Groups[0].Value;
+										pluginresourceid = Regex.Match(pluginurl, "([0-9]{4})").Groups[0].Value; // extract resource id from oxide url
 										githuburl = insertargs[3];
 										namespaces[curnamespace].Add($"{indent}[Info(\"{args[2]}\", \"{pluginauthor}\", \"{args[3]}\", ResourceId = {pluginresourceid})]");
 									}

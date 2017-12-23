@@ -6,7 +6,7 @@ using UnityEngine;
 namespace Oxide.Plugins.JCore {
 
 	public class JDeployable {
-
+		
 		// TODO
 		// handle entity hooks (health, damage, repair)
 		// owner, parent
@@ -14,11 +14,63 @@ namespace Oxide.Plugins.JCore {
 		// spawn/destroy 
 		// load/save
 
+		public class SaveData {
+			public ulong ownerId;
+			public string ownerName;
+			public bool isEnabled = true;
+			public float health;
+			public Dictionary<string, string> custom = new Dictionary<string, string>();
+
+			/// <summary>
+			/// Set userInfo as the owner
+			/// </summary>
+			/// <param name="userInfo"></param>
+			public void SetUser(UserInfo userInfo) {
+				this.ownerId = userInfo.player.userID;
+				this.ownerName = userInfo.player.displayName;
+			}
+
+			/// <summary>
+			/// Set custom data value
+			/// </summary>
+			/// <typeparam name="T"></typeparam>
+			/// <param name="name"></param>
+			/// <param name="value"></param>
+			public void Set(string name, string value) {
+				custom.Add(name, value);
+			}
+
+			/// <summary>
+			/// Set custom data value
+			/// </summary>
+			/// <typeparam name="T"></typeparam>
+			/// <param name="name"></param>
+			/// <param name="value"></param>
+			public void Set(string name, object value) {
+				custom.Add(name, value.ToString());
+			}
+
+			/// <summary>
+			/// Get custom data value
+			/// </summary>
+			/// <typeparam name="T"></typeparam>
+			/// <param name="name"></param>
+			/// <param name="defaultvalue"></param>
+			/// <returns></returns>
+			public string Get(string name, string defaultvalue = "") {
+				string value;
+				if (this.custom.TryGetValue(name, out value)) 
+					return value;
+				return defaultvalue;
+			}
+
+			public bool Has(string name) {
+				return custom.ContainsKey(name);
+			}
+		}
+
 		public int Id;
-		public ulong ownerId;
-		public string ownerName;
-		public bool isEnabled;
-		public float health;
+		public SaveData data;
 
 		private BaseEntity MainParent;
 		private List<BaseEntity> ChildEntities = new List<BaseEntity>();
@@ -42,6 +94,21 @@ namespace Oxide.Plugins.JCore {
 			baseEntity.SetParent(MainParent);
 			baseEntity.enableSaving = false;
 			ChildEntities.Add(baseEntity);
+		}
+
+		/// <summary>
+		/// Use this to change the health of your deployable.
+		/// This will set the health of all child entities.
+		/// </summary>
+		/// <param name="newhealth"></param>
+		public void SetHealth(float newhealth) {
+			
+		}
+
+		public void Kill(BaseNetworkable.DestroyMode mode = BaseNetworkable.DestroyMode.None, bool remove = true) {
+			if (!MainParent.IsDestroyed)
+				MainParent.Kill(mode);
+			if (remove) JDeployableManager.RemoveJDeployable(this.Id);
 		}
 		
 		
@@ -94,9 +161,12 @@ namespace Oxide.Plugins.JCore {
 
 		#endregion
 		
-
+		/// <summary>
+		/// Spawn your deployable from this.data
+		/// </summary>
+		/// <returns></returns>
 		public virtual bool Spawn() {
-			// spawn from variables
+			// spawn from data
 			return false;
 		}
 

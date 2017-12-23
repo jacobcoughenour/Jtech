@@ -1,10 +1,5 @@
-﻿using System;
-using System.Collections;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
-using Oxide.Core.Plugins;
-using Oxide.Game.Rust.Cui;
-using Oxide.Core.Libraries.Covalence;
 using Oxide.Plugins.JCore;
 
 namespace Oxide.Plugins.JTechDeployables {
@@ -14,28 +9,37 @@ namespace Oxide.Plugins.JTechDeployables {
 
 	public class TransportPipe : JDeployable {
 
+		//public class PipeSaveData : SaveData {
+		//	public int grade;				// grade
+		//	public uint sourceid;			// source storage container id
+		//	public uint destid;				// destination storage container id
+		//	public uint sourcechildid;      // source child storage container
+		//	public uint destchildid;        // destination child storage container
+		//	public List<int> filteritems;   // filter item ids
+		//	public bool mode;				// stack mode
+		//	public bool autostart;          // auto starter
+		//}
+
 		public enum Mode {
 			SingleStack, // one stack per item
 			MultiStack,  // multiple stacks per item
 			SingleItem   // only one of each item
 		}
-		
+
+		// these are just cached values that will not be saved
+
+		public BaseEntity sourceent;
+		public BaseEntity destent;
 		public StorageContainer sourcecont;
 		public StorageContainer destcont;
 		public string sourceContainerIconUrl;
 		public string endContainerIconUrl;
-
-		public uint sourcechild = 0;
-		public uint destchild = 0;
-
+		
 		public Vector3 startPosition;
 		public Vector3 endPosition;
 		private float distance;
 
 		public bool isWaterPipe;
-		public BuildingGrade.Enum grade;
-		public bool autostarter;
-		public Mode mode;
 		
 		private static float pipesegdist = 3;
 		private static Vector3 pipefightoffset = new Vector3(0.0001f, 0, 0.0001f); // every other pipe segment is offset by this to remove z fighting
@@ -92,13 +96,11 @@ namespace Oxide.Plugins.JTechDeployables {
 		}
 
 		public override bool Place(UserInfo userInfo) {
-
-			sourcecont = userInfo.placingSelected[0].GetComponent<StorageContainer>();
-			destcont = userInfo.placingSelected[1].GetComponent<StorageContainer>();
-
-			grade = BuildingGrade.Enum.Twigs;
-			autostarter = false;
-			mode = Mode.MultiStack;
+			
+			data = new SaveData();
+			data.SetUser(userInfo);
+			data.Set("sourceid", userInfo.placingSelected[0].net.ID);
+			data.Set("destid", userInfo.placingSelected[1].net.ID);
 
 			return Spawn();
 		}
@@ -107,6 +109,17 @@ namespace Oxide.Plugins.JTechDeployables {
 
 			//sourceContainerIconUrl;
 			//endContainerIconUrl;
+
+			if (!(data.Has("sourceid") && data.Has("destid")))
+				return false;
+
+			Debug.Log(data.Get("sourceid"));
+
+			sourceent = (BaseEntity) BaseNetworkable.serverEntities.Find(uint.Parse(data.Get("sourceid")));
+			destent = (BaseEntity) BaseNetworkable.serverEntities.Find(uint.Parse(data.Get("destid")));
+
+			sourcecont = sourceent.GetComponent<StorageContainer>();
+			destcont = destent.GetComponent<StorageContainer>();
 
 			isWaterPipe = sourcecont is LiquidContainer;
 
@@ -118,7 +131,7 @@ namespace Oxide.Plugins.JTechDeployables {
 
 			//isStartable();
 
-			// TODO spawn pillars
+			// spawn pillars
 
 			int segments = (int) Mathf.Ceil(distance / pipesegdist);
 			float segspace = (distance - pipesegdist) / (segments - 1);
@@ -143,7 +156,7 @@ namespace Oxide.Plugins.JTechDeployables {
 
 				if (block != null) {
 					block.grounded = true;
-					block.grade = grade;
+					block.grade = (BuildingGrade.Enum) int.Parse(data.Get("grade", "0"));
 					block.enableSaving = false;
 					block.Spawn();
 					block.SetHealthToMax();

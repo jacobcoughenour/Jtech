@@ -19,10 +19,117 @@ namespace Oxide.Plugins.JCore {
 		// save deployables
 		// clean up deployables on unload
 
+		public class DeployableSaveData {
+			public string t;
+			public JDeployable.SaveData s;
+		}
+
 		public static Dictionary<Type, JInfoAttribute> DeployableTypes = new Dictionary<Type, JInfoAttribute>();
 		public static Dictionary<Type, List<JRequirementAttribute>> DeployableTypeRequirements = new Dictionary<Type, List<JRequirementAttribute>>();
 
-		public static Dictionary<int, JDeployable> activeDeployables = new Dictionary<int, JDeployable>();
+		// Deployables that are currently spawned
+		public static Dictionary<int, JDeployable> spawnedDeployables = new Dictionary<int, JDeployable>();
+
+		public static void LoadDeployables() {
+			if (DataManager.data == null || DataManager.data.d == null)
+				return;
+			
+			foreach (var de in DataManager.data.d) {
+				if (!LoadJDeployable(de.Key, de.Value)) {
+					Interface.Oxide.LogWarning($"[JCore] Failed to Load Deployable {de.Key}");
+				}
+			}
+		}
+
+		private static bool LoadJDeployable(int id, DeployableSaveData data) {
+
+			Type deployabletype;
+			if (!TryGetType(data.t, out deployabletype))
+				return false;
+
+			// create instance of deployable
+			var instance = Activator.CreateInstance(deployabletype);
+
+			// apply save data to instance
+			var savefield = deployabletype.GetField("data");
+			if (savefield == null)
+				return false;
+
+			savefield.SetValue(instance, data.s);
+
+			// spawn instance
+			var methodInfo = deployabletype.GetMethod("Spawn");
+			bool spawned = false;
+			if (methodInfo != null) {
+				try {
+					spawned = (bool) methodInfo.Invoke(instance, null);
+				} catch (Exception e) {
+					spawned = false;
+					Interface.Oxide.LogWarning(e.InnerException.Message);
+				}
+			}
+			if (spawned == false)
+				return false;
+
+			// set Id
+			var fieldInfo = deployabletype.GetField("Id");
+			if (fieldInfo == null)
+				return false;
+
+			fieldInfo.SetValue(instance, id);
+
+			// add to spawnedDeployables
+			spawnedDeployables.Add(id, (JDeployable) instance);
+			
+			return true;
+		}
+
+		public static void SaveJDeployables() {
+			if (DataManager.data == null || DataManager.data.d == null)
+				return;
+
+			DataManager.data.d.Clear();
+
+			foreach (var de in spawnedDeployables) {
+				if (!SaveJDeployable(de.Key, de.Value)) {
+					Interface.Oxide.LogWarning($"[JCore] Failed to Save Deployable {de.Key}");
+				}
+			}
+		}
+
+		private static bool SaveJDeployable(int id, JDeployable d) {
+
+			DeployableSaveData sd = new DeployableSaveData();
+			sd.t = d.ToString();
+			sd.s = d.data;
+			DataManager.data.d.Add(id, sd);
+
+			return true;
+		}
+
+		public static void UnloadJDeployables() {
+			foreach (var de in spawnedDeployables) {
+				de.Value.Kill(BaseNetworkable.DestroyMode.None, false);
+			}
+			spawnedDeployables.Clear();
+		}
+
+		public static void UnloadJDeployable(int id) {
+			JDeployable dep;
+			if (spawnedDeployables.TryGetValue(id, out dep))
+				UnloadJDeployable(dep);
+		}
+
+		public static void UnloadJDeployable(JDeployable dep) {
+			dep.Kill();
+		}
+
+		public static void RemoveJDeployable(int id) {
+			JDeployable dep;
+			if (spawnedDeployables.TryGetValue(id, out dep)) {
+				spawnedDeployables.Remove(id);
+			}
+		}
 
 		/// <summary>
 		/// JDeployable API
@@ -93,7 +200,7 @@ namespace Oxide.Plugins.JCore {
 		private static System.Random IDGenerator = new System.Random();
 		private static int NewUID() {
 			int id = (int) IDGenerator.Next(0, int.MaxValue);
-			if (activeDeployables.ContainsKey(id))
+			if (spawnedDeployables.ContainsKey(id))
 				return NewUID();
 			else
 				return id;
@@ -114,10 +221,12 @@ namespace Oxide.Plugins.JCore {
 			int id = NewUID();
 			fieldInfo.SetValue(instance, id);
 			
-			activeDeployables.Add(id, (JDeployable) instance);
+			spawnedDeployables.Add(id, (JDeployable) instance);
 			
 			return true;
 		}
+
+		
 
 	}
 }

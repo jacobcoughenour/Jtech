@@ -83,11 +83,11 @@ namespace PluginMerger {
 
 						int newdepth = bracketdepth + (line.Count(f => f == '{') - line.Count(f => f == '}'));
 						
-						if (isDebugEnabled && line.Contains(pmdebugstart)) {
+						if (line.Contains(pmdebugstart)) {
 							insideDebugBlock = true;
 						}
 
-						if (!insideDebugBlock) {
+						if (isDebugEnabled || !insideDebugBlock) {
 							if (bracketdepth == 0) {
 								if (line.TrimStart(' ').StartsWith("namespace ")) { // if namespace
 
@@ -121,7 +121,7 @@ namespace PluginMerger {
 							}
 						}
 
-						if (isDebugEnabled && line.Contains(pmdebugend)) {
+						if (line.Contains(pmdebugend)) {
 							insideDebugBlock = false;
 						}
 						

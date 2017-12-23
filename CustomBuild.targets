@@ -12,7 +12,7 @@
 		</When>
 		<Otherwise>
 			<PropertyGroup>
-				<BuildDir>$(SolutionDir)build\</BuildDir>
+				<BuildDir>$(SolutionDir)build</BuildDir>
 				<OutputPath>$(BuildDir)\$(MSBuildProjectName).cs</OutputPath>
 				<ServerOutputDir>$(RustServerDir)\oxide\plugins</ServerOutputDir>
 			</PropertyGroup>

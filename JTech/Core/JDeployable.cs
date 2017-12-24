@@ -37,7 +37,10 @@ namespace Oxide.Plugins.JCore {
 			/// <param name="name"></param>
 			/// <param name="value"></param>
 			public void Set(string name, string value) {
-				custom.Add(name, value);
+				if (custom.ContainsKey(name))
+					custom[name] = value;
+				else
+					custom.Add(name, value);
 			}
 
 			/// <summary>
@@ -47,7 +50,10 @@ namespace Oxide.Plugins.JCore {
 			/// <param name="name"></param>
 			/// <param name="value"></param>
 			public void Set(string name, object value) {
-				custom.Add(name, value.ToString());
+				if (custom.ContainsKey(name))
+					custom[name] = value.ToString();
+				else
+					custom.Add(name, value.ToString());
 			}
 
 			/// <summary>
@@ -64,23 +70,33 @@ namespace Oxide.Plugins.JCore {
 				return defaultvalue;
 			}
 
-			public bool Has(string name) {
-				return custom.ContainsKey(name);
+			public bool Has(params string[] names) {
+				foreach (string s in names) {
+					if (!custom.ContainsKey(s))
+						return false;
+				}
+				return true;
 			}
 		}
 
 		public int Id;
 		public SaveData data;
 
-		private BaseEntity MainParent;
-		private List<BaseEntity> ChildEntities = new List<BaseEntity>();
+		private BaseCombatEntity MainParent;
+		private List<BaseCombatEntity> ChildEntities = new List<BaseCombatEntity>();
 
-		public void SetMainParent(BaseEntity baseEntity) {
-			// TODO attach a component here
-			baseEntity.gameObject.AddComponent<Child>().parent = this;
-
-			MainParent = baseEntity;
+		public void SetMainParent(BaseCombatEntity baseCombatEntity) {
+			baseCombatEntity.gameObject.AddComponent<Child>().parent = this;
+			
+			MainParent = baseCombatEntity;
 			MainParent.enableSaving = false;
+		}
+
+		public List<BaseCombatEntity> GetEntities() {
+			var ents = new List<BaseCombatEntity>();
+			ents.Add(MainParent);
+			ents.AddRange(ChildEntities);
+			return ents;
 		}
 
 		/// <summary>
@@ -88,15 +104,15 @@ namespace Oxide.Plugins.JCore {
 		/// Note: make sure you .Spawn() the entity first.
 		/// </summary>
 		/// <param name="baseEntity"></param>
-		public void AddChildEntity(BaseEntity baseEntity) {
+		public void AddChildEntity(BaseCombatEntity baseCombatEntity) {
 			if (MainParent == null)
 				return;
 
-			baseEntity.gameObject.AddComponent<Child>().parent = this;
+			baseCombatEntity.gameObject.AddComponent<Child>().parent = this;
 
-			baseEntity.SetParent(MainParent);
-			baseEntity.enableSaving = false;
-			ChildEntities.Add(baseEntity);
+			baseCombatEntity.SetParent(MainParent);
+			baseCombatEntity.enableSaving = false;
+			ChildEntities.Add(baseCombatEntity);
 		}
 
 		/// <summary>
@@ -105,7 +121,12 @@ namespace Oxide.Plugins.JCore {
 		/// </summary>
 		/// <param name="newhealth"></param>
 		public void SetHealth(float newhealth) {
-			
+			data.health = newhealth;
+			MainParent.health = newhealth;
+			foreach (BaseCombatEntity e in ChildEntities) {
+				e.health = newhealth;
+				e.SendNetworkUpdate(BasePlayer.NetworkQueue.UpdateDistance);
+			}
 		}
 
 		public void Kill(BaseNetworkable.DestroyMode mode = BaseNetworkable.DestroyMode.None, bool remove = true) {
@@ -114,14 +135,39 @@ namespace Oxide.Plugins.JCore {
 			if (remove) JDeployableManager.RemoveJDeployable(this.Id);
 		}
 
+		public class Child : MonoBehaviour {
+			public JDeployable parent;
+		}
+
 		public void OnChildKilled() {
 			this.Kill(BaseNetworkable.DestroyMode.Gib);
 		}
 
-		public class Child : MonoBehaviour {
-			public JDeployable parent;
+		#region Child Entity Hooks
+
+		/// <summary>
+		/// OnStructureRepair hook for child entities
+		/// </summary>
+		public virtual void OnStructureRepair(BaseCombatEntity entity, BasePlayer player) {
+			SetHealth(entity.health);
 		}
-		
+
+		/// <summary>
+		/// OnStructureUpgrade hook for child entities
+		/// </summary>
+		public virtual bool? OnStructureUpgrade(Child child, BasePlayer player, BuildingGrade.Enum grade) {
+			return null;
+		}
+
+		/// <summary>
+		/// CanPickupEntity hook for child entities
+		/// </summary>
+		public virtual bool? CanPickupEntity(Child child, BasePlayer player) {
+			return null;
+		}
+
+		#endregion
+
 		#region Placing
 
 		/// <summary>
@@ -184,6 +230,8 @@ namespace Oxide.Plugins.JCore {
 		public virtual void Update(int TickDelta) {
 
 		}
+
+
 		
 
 	}

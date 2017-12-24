@@ -365,11 +365,15 @@ namespace Oxide.Plugins.JCore {
 					methodInfo.Invoke(null, new object[] { this });
 			}
 
+			JInfoAttribute info;
+			JDeployableManager.DeployableTypes.TryGetValue(placingType, out info);
+
+			ShowMessage($"{info.Name} Created", "", 3);
+
 			isPlacing = false;
 			placingType = null;
 			placingSelected.Clear();
-
-			HideMessageText();
+			
 		}
 
 		/// <summary>

@@ -29,16 +29,45 @@ namespace Oxide.Plugins.JCore {
 
 		// Deployables that are currently spawned
 		public static Dictionary<int, JDeployable> spawnedDeployables = new Dictionary<int, JDeployable>();
+		public static Dictionary<Type, List<JDeployable>> spawnedDeployablesByType = new Dictionary<Type, List<JDeployable>>();
+
+		private static void SpawnedDeployablesAdd(int id, JDeployable instance, Type type) {
+			spawnedDeployables.Add(id, instance);
+			
+			if (!spawnedDeployablesByType.ContainsKey(type))
+				spawnedDeployablesByType.Add(type, new List<JDeployable>());
+			spawnedDeployablesByType[type].Add(instance);
+			
+		}
+
+		private static void SpawnedDeployablesRemove(int id, JDeployable instance) {
+
+			spawnedDeployables.Remove(id);
+
+			Type type;
+			if (!TryGetType(instance.ToString(), out type))
+				return;
+
+			if (spawnedDeployablesByType.ContainsKey(type)) {
+				spawnedDeployablesByType[type].Remove(instance);
+			}
+
+		}
 
 		public static void LoadDeployables() {
 			if (DataManager.data == null || DataManager.data.d == null)
 				return;
+
+			int loadcount = 0;
 			
 			foreach (var de in DataManager.data.d) {
-				if (!LoadJDeployable(de.Key, de.Value)) {
-					Interface.Oxide.LogWarning($"[JCore] Failed to Load Deployable {de.Key}");
-				}
+				if (LoadJDeployable(de.Key, de.Value))
+					loadcount++;
+				else
+					Interface.Oxide.LogWarning($"[JCore] Failed to Load Deployable {de.Value} {de.Key}");
 			}
+
+			Interface.Oxide.LogInfo($"[JCore] {loadcount} JDeployables Loaded");
 		}
 
 		private static bool LoadJDeployable(int id, DeployableSaveData data) {
@@ -79,7 +108,7 @@ namespace Oxide.Plugins.JCore {
 			fieldInfo.SetValue(instance, id);
 
 			// add to spawnedDeployables
-			spawnedDeployables.Add(id, (JDeployable) instance);
+			SpawnedDeployablesAdd(id, (JDeployable) instance, deployabletype);
 			
 			return true;
 		}
@@ -90,11 +119,17 @@ namespace Oxide.Plugins.JCore {
 
 			DataManager.data.d.Clear();
 
+			int savecount = 0;
+
 			foreach (var de in spawnedDeployables) {
-				if (!SaveJDeployable(de.Key, de.Value)) {
-					Interface.Oxide.LogWarning($"[JCore] Failed to Save Deployable {de.Key}");
-				}
+				if (SaveJDeployable(de.Key, de.Value))
+					savecount++;
+				else
+					Interface.Oxide.LogWarning($"[JCore] Failed to Save Deployable {de.Value} {de.Key}");
+				
 			}
+
+			Interface.Oxide.LogInfo($"[JCore] {savecount} JDeployables Saved");
 		}
 
 		private static bool SaveJDeployable(int id, JDeployable d) {
@@ -112,6 +147,7 @@ namespace Oxide.Plugins.JCore {
 				de.Value.Kill(BaseNetworkable.DestroyMode.None, false);
 			}
 			spawnedDeployables.Clear();
+			spawnedDeployablesByType.Clear();
 		}
 
 		public static void UnloadJDeployable(int id) {
@@ -127,7 +163,7 @@ namespace Oxide.Plugins.JCore {
 		public static void RemoveJDeployable(int id) {
 			JDeployable dep;
 			if (spawnedDeployables.TryGetValue(id, out dep)) {
-				spawnedDeployables.Remove(id);
+				SpawnedDeployablesRemove(id, dep);
 			}
 		}
 
@@ -164,6 +200,9 @@ namespace Oxide.Plugins.JCore {
 			
 			DeployableTypes.Add(typeof(T), info);
 			DeployableTypeRequirements.Add(typeof(T), requirements);
+			if (!spawnedDeployablesByType.ContainsKey(typeof(T)))
+				spawnedDeployablesByType.Add(typeof(T), new List<JDeployable>());
+
 			Interface.Oxide.LogInfo($"[JDeployableManager] Registered Deployable: [{info.PluginInfo.Title}] {info.Name}");
 			
 		}

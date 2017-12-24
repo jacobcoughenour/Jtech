@@ -60,11 +60,10 @@ namespace Oxide.Plugins {
 			}
 
 		}
-
-		//PM.DEBUGSTART
+		
 		// removes anything named UserInfo from the player
 		[ConsoleCommand("jtech.clean")]
-		private void cmdpipechangedir(ConsoleSystem.Arg arg) {
+		private void cmdjtechclean(ConsoleSystem.Arg arg) {
 
 			List<UnityEngine.Object> uis = new List<UnityEngine.Object>();
 			foreach (var player in BasePlayer.activePlayerList) {
@@ -86,7 +85,6 @@ namespace Oxide.Plugins {
 					UserInfo.Get(player);
 			});
 		}
-		//PM.DEBUGEND
 
 		void OnNewSave(string filename) {
 			// TODO
@@ -130,13 +128,13 @@ namespace Oxide.Plugins {
 		}
 
 		void OnStructureDemolish(BaseCombatEntity entity, BasePlayer player) {
-			JDeployable.Child c = entity.GetComponent<JDeployable.Child>();
+			JDeployable.Child c = entity?.GetComponent<JDeployable.Child>();
 			if (c != null && c.parent != null)
 				c.parent.OnChildKilled();
 		}
 
 		void OnEntityDeath(BaseCombatEntity entity, HitInfo info) {
-			JDeployable.Child c = entity.GetComponent<JDeployable.Child>();
+			JDeployable.Child c = entity?.GetComponent<JDeployable.Child>();
 			if (c != null && c.parent != null)
 				c.parent.OnChildKilled();
 		}
@@ -151,22 +149,41 @@ namespace Oxide.Plugins {
 
 			if (entity != null && hitInfo != null) {
 
-				JDeployable.Child c = entity.GetComponent<JDeployable.Child>();
+				JDeployable.Child c = entity?.GetComponent<JDeployable.Child>();
 				if (c != null && c.parent != null) {
 					
 					float damage = hitInfo.damageTypes.Total();
 					if (damage > 0) {
 						
 						float newhealth = entity.health - damage;
-						if (newhealth >= 1f)
+						if (newhealth > 0f)
 							c.parent.SetHealth(newhealth);
 						else
 							c.parent.OnChildKilled();
-
 					}
 					return true;
 				}
 			}
+			return null;
+		}
+
+		bool? OnStructureUpgrade(BaseCombatEntity entity, BasePlayer player, BuildingGrade.Enum grade) {
+			JDeployable.Child c = entity?.GetComponent<JDeployable.Child>();
+			if (c != null && c.parent != null && player != null)
+				return c.parent.OnStructureUpgrade(c, player, grade);
+			return null;
+		}
+
+		void OnStructureRepair(BaseCombatEntity entity, BasePlayer player) {
+			JDeployable.Child c = entity?.GetComponent<JDeployable.Child>();
+			if (c != null && c.parent != null && player != null)
+				NextTick(() => c.parent.OnStructureRepair(entity, player));
+		}
+
+		bool? CanPickupEntity(BaseCombatEntity entity, BasePlayer player) {
+			JDeployable.Child c = entity?.GetComponent<JDeployable.Child>();
+			if (c != null && c.parent != null && player != null)
+				return c.parent.CanPickupEntity(c, player);
 			return null;
 		}
 

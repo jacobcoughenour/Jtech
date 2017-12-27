@@ -7,7 +7,7 @@ namespace Oxide.Plugins.JTechDeployables {
 
 	[JInfo(typeof(JTech), "Transport Pipe", "https://vignette.wikia.nocookie.net/play-rust/images/4/4a/Metal_Pipe_icon.png/revision/latest/scale-to-width-down/200")]
 	[JRequirement("wood", 20, "segment")]
-	[JUpdate(2, 50)]
+	[JUpdate(4, 16)]
 
 	public class TransportPipe : JDeployable {
 		
@@ -210,12 +210,14 @@ namespace Oxide.Plugins.JTechDeployables {
 				return false;
 			}
 
-			if (timeDelta < 1f)
-				return false;
+			
 		
 			if (this.data.isEnabled && sourcecont.inventory.itemList.Count > 0 && sourcecont.inventory.itemList[0] != null) {
 				
-				int amounttotake = Mathf.FloorToInt(timeDelta) * flowrate;
+				int amounttotake = Mathf.FloorToInt(timeDelta * flowrate);
+
+				if (amounttotake < 1)
+					return false;
 
 				if (isWaterPipe) { // water pipe
 					

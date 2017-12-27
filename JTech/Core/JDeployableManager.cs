@@ -46,7 +46,9 @@ namespace Oxide.Plugins.JCore {
 		/// Distributed JDeployable Update
 		/// </summary>
 		public static void Update() {
-			
+
+			long now = DateTime.Now.Ticks;
+
 			foreach (var deployablebytype in spawnedDeployablesByType) { // for each type of deployable
 				if (deployablebytype.Value.Count > 0) {
 
@@ -73,21 +75,18 @@ namespace Oxide.Plugins.JCore {
 
 						//JInfoAttribute info;
 						//DeployableTypes.TryGetValue(deployablebytype.Key, out info);
-
-						//if (UpdateDebug) {
-						//	Interface.Oxide.LogInfo($"[JDeployableManager] --- {info.Name} timeslot {curtimeslot} of {updateDelay} ---");
-						//}
+						//Interface.Oxide.LogInfo($"[JDeployableManager] --- {info.Name} timeslot {curtimeslot + 1} of {updateDelay} ---");
 
 						// update deployables for current time slot
 						for (int i = curtimeslot; i < deployablebytype.Value.Count; i += updateDelay) {
 							JDeployable dep = deployablebytype.Value[i];
-							long now = DateTime.Now.Ticks;
-							if (dep.Update((now - dep._lastUpdate) * 0.0000001f)) { // convert ticks to seconds
-								dep._lastUpdate = DateTime.Now.Ticks; // if true, set last update
-							}
-							//if (UpdateDebug)
-							//	Interface.Oxide.LogInfo($"[JDeployableManager] {info.Name} {i} of {deployablebytype.Value.Count} updated with delta {now - dep._lastUpdate}");
 							
+							if (dep.Update((now - dep._lastUpdate) * 0.0000001f)) { // convert ticks to seconds
+								 
+								//Interface.Oxide.LogInfo($"[JDeployableManager] {info.Name} {i+1} of {deployablebytype.Value.Count} updated with delta {(now - dep._lastUpdate) * 0.0000001f}s");
+
+								dep._lastUpdate = now; // if true, set last update
+							}
 						}
 
 						// set timeslot for next update

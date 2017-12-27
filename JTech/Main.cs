@@ -37,7 +37,7 @@ namespace Oxide.Plugins {
 			JDeployableManager.LoadDeployables();
 
 			// start update
-			timer.Repeat(0.1f, 0, JDeployableManager.Update);
+			timer.Repeat(0.25f, 0, JDeployableManager.Update);
 		}
 		
 		void Unload() {

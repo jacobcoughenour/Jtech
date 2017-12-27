@@ -116,16 +116,29 @@ namespace Oxide.Plugins.JCore {
 			if (DataManager.data == null || DataManager.data.d == null)
 				return;
 
-			int loadcount = 0;
+			int totalloadcount = 0;
+			Dictionary<string, int> loadcount = new Dictionary<string, int>();
 			
 			foreach (var de in DataManager.data.d) {
-				if (LoadJDeployable(de.Key, de.Value))
-					loadcount++;
-				else
-					Interface.Oxide.LogWarning($"[JCore] Failed to Load Deployable {de.Value} {de.Key}");
-			}
+				
+				Type deployabletype;
+				JInfoAttribute info;
+				if (TryGetType(de.Value.t, out deployabletype) && DeployableTypes.TryGetValue(deployabletype, out info)) {
 
-			Interface.Oxide.LogInfo($"[JCore] {loadcount} JDeployables Loaded");
+					if (!loadcount.Keys.Contains(info.Name))
+						loadcount.Add(info.Name, 0);
+					if (LoadJDeployable(de.Key, de.Value)) {
+						loadcount[info.Name]++;
+						totalloadcount++;
+					} else
+						Interface.Oxide.LogWarning($"[JCore] Failed to Load Deployable {de.Value} {de.Key}");
+				}
+			}
+			
+			Interface.Oxide.LogInfo($"[JCore] --- {totalloadcount} JDeployables Loaded ---");
+			foreach (var count in loadcount)
+				Interface.Oxide.LogInfo($"[JCore] > {count.Value} {count.Key}");
+			Interface.Oxide.LogInfo($"[JCore] -----------------------------");
 		}
 
 		private static bool LoadJDeployable(int id, DeployableSaveData data) {
@@ -182,17 +195,30 @@ namespace Oxide.Plugins.JCore {
 
 			DataManager.data.d.Clear();
 
-			int savecount = 0;
+			int totalsavecount = 0;
+			Dictionary<string, int> savecount = new Dictionary<string, int>();
+			
+			foreach (var deployablebytype in spawnedDeployablesByType) {
 
-			foreach (var de in spawnedDeployables) {
-				if (SaveJDeployable(de.Key, de.Value))
-					savecount++;
-				else
-					Interface.Oxide.LogWarning($"[JCore] Failed to Save Deployable {de.Value} {de.Key}");
-				
+				JInfoAttribute info;
+				if (DeployableTypes.TryGetValue(deployablebytype.Key, out info)) {
+
+					savecount.Add(info.Name, 0);
+					foreach (var de in deployablebytype.Value) {
+						if (SaveJDeployable(de.Id, de)) {
+							totalsavecount++;
+							savecount[info.Name]++;
+						} else
+							Interface.Oxide.LogWarning($"[JCore] Failed to Save Deployable {de} {de.Id}");
+					}
+				}
 			}
 
-			Interface.Oxide.LogInfo($"[JCore] {savecount} JDeployables Saved");
+			Interface.Oxide.LogInfo($"[JCore] --- {totalsavecount} JDeployables Saved ---");
+			foreach (var count in savecount)
+				Interface.Oxide.LogInfo($"[JCore] > {count.Value} {count.Key}");
+			Interface.Oxide.LogInfo($"[JCore] ----------------------------");
+			
 		}
 
 		private static bool SaveJDeployable(int id, JDeployable d) {

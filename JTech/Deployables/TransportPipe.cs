@@ -1,25 +1,23 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
 using Oxide.Plugins.JCore;
+using System;
 
 namespace Oxide.Plugins.JTechDeployables {
 
 	[JInfo(typeof(JTech), "Transport Pipe", "https://vignette.wikia.nocookie.net/play-rust/images/4/4a/Metal_Pipe_icon.png/revision/latest/scale-to-width-down/200")]
 	[JRequirement("wood", 20, "segment")]
-	[JUpdate(5, 50)]
+	[JUpdate(2, 50)]
 
 	public class TransportPipe : JDeployable {
 		
 		//public class PipeSaveData : SaveData {
-		//	public int grade;				// grade
-		//	public uint sourceid;			// source storage container id
-		//	public uint destid;				// destination storage container id
-		//	public uint sourcechildid;      // source child storage container
-		//	public uint destchildid;        // destination child storage container
 		//	public List<int> filteritems;   // filter item ids
 		//	public bool mode;				// stack mode
 		//	public bool autostart;          // auto starter
 		//}
+
+		public static List<int> flowrates = new List<int>() { 1, 5, 10, 30, 50 };
 
 		public enum Mode {
 			SingleStack, // one stack per item
@@ -33,12 +31,11 @@ namespace Oxide.Plugins.JTechDeployables {
 		public StorageContainer destcont;
 		public string sourceContainerIconUrl;
 		public string endContainerIconUrl;
-		
 		public Vector3 startPosition;
 		public Vector3 endPosition;
 		private float distance;
-
 		public bool isWaterPipe;
+		private int flowrate;
 		
 		private static float pipesegdist = 3;
 		private static Vector3 pipefightoffset = new Vector3(0.0001f, 0, 0.0001f); // every other pipe segment is offset by this to remove z fighting
@@ -122,6 +119,7 @@ namespace Oxide.Plugins.JTechDeployables {
 			}
 
 			data.Set("grade", ((int) grade).ToString());
+			flowrate = flowrates[(int) grade];
 
 			return null;
 		}
@@ -146,6 +144,8 @@ namespace Oxide.Plugins.JTechDeployables {
 				return false;
 			
 			isWaterPipe = sourcecont is LiquidContainer;
+
+			flowrate = flowrates[int.Parse(data.Get("grade", "0"))];
 
 			startPosition = sourcecont.CenterPoint() + containeroffset(sourcecont);
 			endPosition = destcont.CenterPoint() + containeroffset(destcont);
@@ -201,7 +201,129 @@ namespace Oxide.Plugins.JTechDeployables {
 
 			return true;
 		}
+
+		public override bool Update(float timeDelta) {
+			
+			// if one of the containers are destroyed, kill the pipe
+			if (sourcecont == null || destcont == null) {
+				this.Kill(BaseNetworkable.DestroyMode.Gib);
+				return false;
+			}
+
+			if (timeDelta < 1f)
+				return false;
 		
+			if (this.data.isEnabled && sourcecont.inventory.itemList.Count > 0 && sourcecont.inventory.itemList[0] != null) {
+				
+				int amounttotake = Mathf.FloorToInt(timeDelta) * flowrate;
+
+				if (isWaterPipe) { // water pipe
+					
+					Item itemtomove = sourcecont.inventory.itemList[0];
+
+					if (destcont.inventory.itemList.Count == 1) {
+						Item slot = destcont.inventory.itemList[0];
+
+						if (slot.CanStack(itemtomove)) {
+
+							int maxstack = slot.MaxStackable();
+							if (slot.amount < maxstack) {
+								if ((maxstack - slot.amount) < amounttotake)
+									amounttotake = maxstack - slot.amount;
+								MoveItem(itemtomove, amounttotake, destcont, -1);
+							}
+						}
+					} else {
+						MoveItem(itemtomove, amounttotake, destcont, -1);
+					}
+
+				} else { // item pipe
+
+					Item itemtomove = FindItem();
+
+					// move the item
+					if (itemtomove != null && CanAcceptItem(itemtomove)) {
+						
+						//if (singlestack) {
+
+						//	Item slot = destcont.inventory.FindItemsByItemID(itemtomove.info.itemid).OrderBy<Item, int>((Func<Item, int>) (x => x.amount)).FirstOrDefault<Item>();
+
+						//	if (slot != null) {
+						//		if (slot.CanStack(itemtomove)) {
+
+						//			int maxstack = slot.MaxStackable();
+						//			if (slot.amount < maxstack) {
+						//				if ((maxstack - slot.amount) < amounttotake)
+						//					amounttotake = maxstack - slot.amount;
+						//				pipe.moveitem(itemtomove, amounttotake, pipe.destcont, (pipe.fsplit) ? pipe.fsstacks : -1);
+						//				TurnOnDest();
+						//			}
+						//		}
+						//	} else {
+						//		pipe.moveitem(itemtomove, amounttotake, pipe.destcont, (pipe.fsplit) ? pipe.fsstacks : -1);
+						//		TurnOnDest();
+						//	}
+						//} else {
+							MoveItem(itemtomove, amounttotake, destcont, -1);
+							//TurnOnDest();
+						//}
+					}
+
+				}
+
+			}
+
+			return true;
+		}
+
+		private static void MoveItem(Item itemtomove, int amounttotake, StorageContainer cont, int stacks) {
+
+			if (itemtomove.amount > amounttotake)
+				itemtomove = itemtomove.SplitItem(amounttotake);
+
+			//if ((BaseEntity) cont is BaseOven && stacks > -1) {
+			//	if (FurnaceSplitter != null)
+			//		FurnaceSplitter?.Call("MoveSplitItem", itemtomove, (BaseEntity) cont, stacks);
+			//	else
+			//		itemtomove.MoveToContainer(cont.inventory);
+			//} else {
+			itemtomove.MoveToContainer(cont.inventory);
+			//}
+		}
+
+		private bool CanAcceptItem(Item itemtomove) {
+			//if (pipe.dest is VendingMachine) {
+			//    bool result = pipe.destcont.inventory.CanTake(itemtomove);
+			//    pipe.debugstring = result.ToString() + (pipe.destcont.inventory.CanAcceptItem(itemtomove) == ItemContainer.CanAcceptResult.CanAccept).ToString();
+			//    //return result;
+			//}
+
+			//if ( !((BaseEntity) pipe.destcont is Recycler) || (((BaseEntity) pipe.destcont is Recycler) && (i.position > 5)))
+			//FindPosition(Item item)
+
+			return destcont.inventory.CanAcceptItem(itemtomove, -1) == ItemContainer.CanAcceptResult.CanAccept && destcont.inventory.CanTake(itemtomove);
+		}
+
+		private Item FindItem() {
+
+			foreach (Item i in sourcecont.inventory.itemList) { // for each item in source container
+				//if (filteritems.Count == 0 || filteritems.Contains(i.info.itemid)) { // if filter is empty or contains this item
+					if (!(sourcecont is Recycler) || (sourcecont is Recycler && i.position > 5)) { // if source is recycler then only take items from the output
+
+						if (destcont is BaseOven) { // only send Burnable or Cookable to BaseOven
+							if ((bool) ((UnityEngine.Object) i.info.GetComponent<ItemModBurnable>()) || (bool) ((UnityEngine.Object) i.info.GetComponent<ItemModCookable>()))
+								return i;
+						} else if (destcont is Recycler) { // only send recyclables to recycler
+							if ((UnityEngine.Object) i.info.Blueprint != (UnityEngine.Object) null)
+								return i;
+						} else {
+							return i;
+						}
+					}
+				//}
+			}
+			return null;
+		}
 
 		private static bool checkContPrivilege(StorageContainer cont, BasePlayer p) => cont.CanOpenLootPanel(p) && checkBuildingPrivilege(p);
 
@@ -210,7 +332,7 @@ namespace Oxide.Plugins.JTechDeployables {
 			//	return true;
 			return p.CanBuild();
 		}
-
+		
 		private static bool isPipeOverlapping(BaseEntity sourcecont, BaseEntity destcont) {
 			
 			uint s = sourcecont.net.ID;

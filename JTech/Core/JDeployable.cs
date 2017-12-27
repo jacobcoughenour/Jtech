@@ -227,13 +227,14 @@ namespace Oxide.Plugins.JCore {
 		}
 
 		public long _lastUpdate;
-		
+
 		/// <summary>
 		/// Update loop
 		/// </summary>
-		/// <param name="tickDelta">elapsed time between updates in ticks</param>
-		public virtual void Update(long tickDelta) {
-
+		/// <param name="timeDelta">elapsed time between updates in seconds</param>
+		/// <returns></returns>
+		public virtual bool Update(float timeDelta) {
+			return true;
 		}
 		
 	}

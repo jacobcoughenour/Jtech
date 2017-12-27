@@ -46,8 +46,6 @@ namespace Oxide.Plugins.JCore {
 		/// Distributed JDeployable Update
 		/// </summary>
 		public static void Update() {
-
-			long now = DateTime.Now.Ticks;
 			
 			foreach (var deployablebytype in spawnedDeployablesByType) { // for each type of deployable
 				if (deployablebytype.Value.Count > 0) {
@@ -70,7 +68,6 @@ namespace Oxide.Plugins.JCore {
 							double concurrent = (double) Math.Ceiling(((double) deployablebytype.Value.Count) / (updateDelay));
 							if (concurrent > updateinfo.maxConcurrentUpdates) {
 								updateDelay *= (int) Math.Ceiling(concurrent / updateinfo.maxConcurrentUpdates);
-								;
 							}
 						}
 
@@ -84,12 +81,13 @@ namespace Oxide.Plugins.JCore {
 						// update deployables for current time slot
 						for (int i = curtimeslot; i < deployablebytype.Value.Count; i += updateDelay) {
 							JDeployable dep = deployablebytype.Value[i];
-							dep.Update(now - dep._lastUpdate);
-
+							long now = DateTime.Now.Ticks;
+							if (dep.Update((now - dep._lastUpdate) * 0.0000001f)) { // convert ticks to seconds
+								dep._lastUpdate = DateTime.Now.Ticks; // if true, set last update
+							}
 							//if (UpdateDebug)
 							//	Interface.Oxide.LogInfo($"[JDeployableManager] {info.Name} {i} of {deployablebytype.Value.Count} updated with delta {now - dep._lastUpdate}");
-
-							dep._lastUpdate = now;
+							
 						}
 
 						// set timeslot for next update

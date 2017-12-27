@@ -12,20 +12,7 @@ namespace Oxide.Plugins.JCore {
 	public class JDeployableManager {
 
 		// TODO
-		// manage spawned deployables
 		// distributive deployable update
-		// load deployable types
-		// load and spawn deployables from save file (async)
-		// save deployables
-		// clean up deployables on unload
-
-		public class DeployableSaveData {
-			public string t;
-			public JDeployable.SaveData s;
-		}
-
-		public static Dictionary<Type, JInfoAttribute> DeployableTypes = new Dictionary<Type, JInfoAttribute>();
-		public static Dictionary<Type, List<JRequirementAttribute>> DeployableTypeRequirements = new Dictionary<Type, List<JRequirementAttribute>>();
 
 		// Deployables that are currently spawned
 		public static Dictionary<int, JDeployable> spawnedDeployables = new Dictionary<int, JDeployable>();
@@ -33,11 +20,10 @@ namespace Oxide.Plugins.JCore {
 
 		private static void SpawnedDeployablesAdd(int id, JDeployable instance, Type type) {
 			spawnedDeployables.Add(id, instance);
-			
+
 			if (!spawnedDeployablesByType.ContainsKey(type))
 				spawnedDeployablesByType.Add(type, new List<JDeployable>());
 			spawnedDeployablesByType[type].Add(instance);
-			
 		}
 
 		private static void SpawnedDeployablesRemove(int id, JDeployable instance) {
@@ -51,7 +37,79 @@ namespace Oxide.Plugins.JCore {
 			if (spawnedDeployablesByType.ContainsKey(type)) {
 				spawnedDeployablesByType[type].Remove(instance);
 			}
+		}
 
+		private static Dictionary<Type, int> CurrentUpdateTimeslot = new Dictionary<Type, int>();
+
+		
+		/// <summary>
+		/// Distributed JDeployable Update
+		/// </summary>
+		public static void Update() {
+
+			long now = DateTime.Now.Ticks;
+			
+			foreach (var deployablebytype in spawnedDeployablesByType) { // for each type of deployable
+				if (deployablebytype.Value.Count > 0) {
+
+					JUpdateAttribute updateinfo;
+					if (DeployableTypeUpdates.TryGetValue(deployablebytype.Key, out updateinfo)) { // get update attribute for type
+
+						// get timeslot for type
+						int curtimeslot;
+						if (!CurrentUpdateTimeslot.TryGetValue(deployablebytype.Key, out curtimeslot)) {
+							CurrentUpdateTimeslot.Add(deployablebytype.Key, 0);
+							curtimeslot = 0;
+						}
+						
+						int updateDelay = updateinfo.updateDelay;
+
+						// max concurrent updates
+						// Max number of updates called at the same time for this deployable.  When exceeded, updateDelay is increased 
+						if (updateinfo.maxConcurrentUpdates > 0) {
+							double concurrent = (double) Math.Ceiling(((double) deployablebytype.Value.Count) / (updateDelay));
+							if (concurrent > updateinfo.maxConcurrentUpdates) {
+								updateDelay *= (int) Math.Ceiling(concurrent / updateinfo.maxConcurrentUpdates);
+								;
+							}
+						}
+
+						//JInfoAttribute info;
+						//DeployableTypes.TryGetValue(deployablebytype.Key, out info);
+
+						//if (UpdateDebug) {
+						//	Interface.Oxide.LogInfo($"[JDeployableManager] --- {info.Name} timeslot {curtimeslot} of {updateDelay} ---");
+						//}
+
+						// update deployables for current time slot
+						for (int i = curtimeslot; i < deployablebytype.Value.Count; i += updateDelay) {
+							JDeployable dep = deployablebytype.Value[i];
+							dep.Update(now - dep._lastUpdate);
+
+							//if (UpdateDebug)
+							//	Interface.Oxide.LogInfo($"[JDeployableManager] {info.Name} {i} of {deployablebytype.Value.Count} updated with delta {now - dep._lastUpdate}");
+
+							dep._lastUpdate = now;
+						}
+
+						// set timeslot for next update
+						if (curtimeslot + 1 < updateDelay) {
+							CurrentUpdateTimeslot[deployablebytype.Key]++;
+						} else {
+							CurrentUpdateTimeslot[deployablebytype.Key] = 0;
+						}
+
+					}
+				}
+			}
+
+		}
+
+		#region Save and Load
+
+		public class DeployableSaveData {
+			public string t;
+			public JDeployable.SaveData s;
 		}
 
 		public static void LoadDeployables() {
@@ -104,8 +162,13 @@ namespace Oxide.Plugins.JCore {
 			var fieldInfo = deployabletype.GetField("Id");
 			if (fieldInfo == null)
 				return false;
-
 			fieldInfo.SetValue(instance, id);
+
+			// set last update
+			var lastupdatefield = deployabletype.GetField("_lastUpdate");
+			if (lastupdatefield == null)
+				return false;
+			lastupdatefield.SetValue(instance, DateTime.Now.Ticks);
 
 			// add to spawnedDeployables
 			SpawnedDeployablesAdd(id, (JDeployable) instance, deployabletype);
@@ -167,6 +230,14 @@ namespace Oxide.Plugins.JCore {
 			}
 		}
 
+		#endregion
+
+		#region Deployable Types
+
+		public static Dictionary<Type, JInfoAttribute> DeployableTypes = new Dictionary<Type, JInfoAttribute>();
+		public static Dictionary<Type, List<JRequirementAttribute>> DeployableTypeRequirements = new Dictionary<Type, List<JRequirementAttribute>>();
+		public static Dictionary<Type, JUpdateAttribute> DeployableTypeUpdates = new Dictionary<Type, JUpdateAttribute>();
+
 		/// <summary>
 		/// JDeployable API
 		/// Registers JDeployable to the JDeployableManager
@@ -197,9 +268,18 @@ namespace Oxide.Plugins.JCore {
 				Interface.Oxide.LogWarning($"[JDeployableManager] Failed to register ({typeof(T)}) - More than 5 JRequirementAttribute are not allowed.");
 				return;
 			}
-			
+
+			// get JUpdate attribute
+			JUpdateAttribute jupdate = (JUpdateAttribute) System.Attribute.GetCustomAttribute(typeof(T), typeof(JUpdateAttribute));
+
+			if (jupdate == null) {
+				Interface.Oxide.LogWarning($"[JDeployableManager] Failed to register ({typeof(T)}) - Missing JUpdateAttribute.");
+				return;
+			} 
+
 			DeployableTypes.Add(typeof(T), info);
 			DeployableTypeRequirements.Add(typeof(T), requirements);
+			DeployableTypeUpdates.Add(typeof(T), jupdate);
 			if (!spawnedDeployablesByType.ContainsKey(typeof(T)))
 				spawnedDeployablesByType.Add(typeof(T), new List<JDeployable>());
 
@@ -217,7 +297,7 @@ namespace Oxide.Plugins.JCore {
 			// get info attribute
 			JInfoAttribute info = (JInfoAttribute) System.Attribute.GetCustomAttribute(typeof(T), typeof(JInfoAttribute));
 
-			if (DeployableTypes.Remove(typeof(T)) && DeployableTypeRequirements.Remove(typeof(T))) {
+			if (DeployableTypes.Remove(typeof(T)) && DeployableTypeRequirements.Remove(typeof(T)) && DeployableTypeUpdates.Remove(typeof(T))) {
 				Interface.Oxide.LogInfo($"[JCore] Unregistered Deployable: [{info.PluginInfo.Title}] {info.Name}");
 			} else {
 				Interface.Oxide.LogInfo($"[JCore] Failed to Unregistered Deployable: [{info.PluginInfo.Title}] {info.Name}");
@@ -236,6 +316,10 @@ namespace Oxide.Plugins.JCore {
 			return false;
 		}
 
+		#endregion
+
+		#region Placing
+
 		private static System.Random IDGenerator = new System.Random();
 		private static int NewUID() {
 			int id = (int) IDGenerator.Next(0, int.MaxValue);
@@ -253,19 +337,24 @@ namespace Oxide.Plugins.JCore {
 			if (!(methodInfo != null && (bool) methodInfo.Invoke(instance, new object[] { userInfo })))
 				return false;
 
+			// create id
 			var fieldInfo = deployabletype.GetField("Id");
 			if (fieldInfo == null)
 				return false;
-
 			int id = NewUID();
 			fieldInfo.SetValue(instance, id);
-			
-			spawnedDeployables.Add(id, (JDeployable) instance);
+
+			// set last update
+			var lastupdatefield = deployabletype.GetField("_lastUpdate");
+			if (lastupdatefield == null)
+				return false;
+			lastupdatefield.SetValue(instance, DateTime.Now.Ticks);
+
+			SpawnedDeployablesAdd(id, (JDeployable) instance, deployabletype);
 			
 			return true;
 		}
 
-		
-
+		#endregion
 	}
 }

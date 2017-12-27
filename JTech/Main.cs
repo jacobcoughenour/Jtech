@@ -15,13 +15,12 @@ namespace Oxide.Plugins {
 	class JTech : RustPlugin {
 
 		#region Oxide Hooks
-
+		
 		void Init() {
 
 			// TODO
 			// register lang messages
 			// load config
-			// load commands
 
 			NextFrame(() => {
 				foreach (var player in BasePlayer.activePlayerList)
@@ -29,23 +28,19 @@ namespace Oxide.Plugins {
 			});
 			
 		}
-		
+
 		void OnServerInitialized() {
-
-			// TODO
-			// load deployables from save data
-			// Put loaded message
-
+			
 			RegisterDeployables();
 
 			DataManager.Load();
 			JDeployableManager.LoadDeployables();
+
+			// start update
+			timer.Repeat(0.1f, 0, JDeployableManager.Update);
 		}
 		
 		void Unload() {
-
-			// TODO
-			// unload deployables after save
 
 			OnServerSave();
 			JDeployableManager.UnloadJDeployables();

@@ -6,6 +6,7 @@ namespace Oxide.Plugins.JTechDeployables {
 
 	[JInfo(typeof(JTech), "Transport Pipe", "https://vignette.wikia.nocookie.net/play-rust/images/4/4a/Metal_Pipe_icon.png/revision/latest/scale-to-width-down/200")]
 	[JRequirement("wood", 20, "segment")]
+	[JUpdate(5, 50)]
 
 	public class TransportPipe : JDeployable {
 		

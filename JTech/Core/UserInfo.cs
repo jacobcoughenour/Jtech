@@ -365,21 +365,21 @@ namespace Oxide.Plugins.JCore {
 					methodInfo.Invoke(null, new object[] { this });
 			}
 
-			JInfoAttribute info;
-			JDeployableManager.DeployableTypes.TryGetValue(placingType, out info);
-
-			ShowMessage($"{info.Name} Created", "", 3);
-
 			isPlacing = false;
 			placingType = null;
 			placingSelected.Clear();
-			
 		}
 
 		/// <summary>
 		/// Cancel placing deployable
 		/// </summary>
 		public void CancelPlacing() {
+
+			if (!isPlacing)
+				return;
+
+			ShowMessage($"Canceled Placing", "", 1);
+
 			EndPlacing();
 		}
 
@@ -395,7 +395,12 @@ namespace Oxide.Plugins.JCore {
 
 				CollectIngredients(placingType); // consume ingredients from player's inventory
 			}
-			
+
+			JInfoAttribute info;
+			JDeployableManager.DeployableTypes.TryGetValue(placingType, out info);
+
+			ShowMessage($"{info.Name} Created", "", 3);
+
 			EndPlacing();
 		}
 

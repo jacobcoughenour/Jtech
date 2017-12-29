@@ -184,11 +184,14 @@ namespace Oxide.Plugins.JCore {
 					spawned = (bool) methodInfo.Invoke(instance, null);
 				} catch (Exception e) {
 					spawned = false;
-					Interface.Oxide.LogWarning(e.InnerException.Message);
+					Interface.Oxide.LogWarning($"[JCore] Failed to Spawn Deployable {e.InnerException.Message}");
 				}
 			}
-			if (spawned == false)
+			if (!spawned) {
+				// clean up if deployable
+				deployabletype.GetMethod("Kill")?.Invoke(instance, new object[] { BaseNetworkable.DestroyMode.None, false });
 				return false;
+			}
 
 			// set Id
 			var fieldInfo = deployabletype.GetField("Id");
@@ -381,9 +384,27 @@ namespace Oxide.Plugins.JCore {
 
 			var instance = Activator.CreateInstance(deployabletype);
 
+			//var methodInfo = deployabletype.GetMethod("Place");
+			//if (!(methodInfo != null && (bool) methodInfo.Invoke(instance, new object[] { userInfo })))
+			//	return false;
+
+			// place instance
 			var methodInfo = deployabletype.GetMethod("Place");
-			if (!(methodInfo != null && (bool) methodInfo.Invoke(instance, new object[] { userInfo })))
+			bool placed = false;
+			if (methodInfo != null) {
+				try {
+					placed = ((bool) methodInfo.Invoke(instance, new object[] { userInfo }));
+				} catch (Exception e) {
+					placed = false;
+					Interface.Oxide.LogWarning($"[JCore] Failed to Place Deployable {e.InnerException.Message}");
+					userInfo.ShowErrorMessage("Failed to Place Deployable", e.InnerException.Message);
+				}
+			}
+			if (!placed) {
+				// clean up if deployable spawned anything
+				deployabletype.GetMethod("Kill")?.Invoke(instance, new object[] { BaseNetworkable.DestroyMode.None, false });
 				return false;
+			}
 
 			// create id
 			var fieldInfo = deployabletype.GetField("Id");

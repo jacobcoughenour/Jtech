@@ -89,6 +89,9 @@ namespace Oxide.Plugins.JCore {
 			var item = player.GetActiveItem();
 			isHoldingHammer = (item != null && item.info != null && (item.info.name == "hammer.item"));
 
+			//if (item != null)
+			//	ShowMessageText(item.position.ToString(), "", "0.251 0.769 1 1");
+
 			// TODO if change from placeholder item, EndPlacing()
 		}
 
@@ -387,14 +390,14 @@ namespace Oxide.Plugins.JCore {
 		/// Done placing deployable
 		/// </summary>
 		public void DonePlacing() {
-			
-			if (!isPlacing)
-				return;
-			
-			if (CanCraftDeployable(placingType) && JDeployableManager.PlaceDeployable(placingType, this)) { // if player can craft it and it is placed
 
-				CollectIngredients(placingType); // consume ingredients from player's inventory
-			}
+			if (!isPlacing) 
+				return;
+
+			if (!CanCraftDeployable(placingType) || !JDeployableManager.PlaceDeployable(placingType, this)) // if player can craft it and it is placed
+				return;
+
+			CollectIngredients(placingType); // consume ingredients from player's inventory
 
 			JInfoAttribute info;
 			JDeployableManager.DeployableTypes.TryGetValue(placingType, out info);

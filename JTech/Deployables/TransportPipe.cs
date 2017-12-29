@@ -340,8 +340,8 @@ namespace Oxide.Plugins.JTechDeployables {
 			uint s = sourcecont.net.ID;
 			uint d = destcont.net.ID;
 
-			List<JDeployable> pipes;
-			if (!JDeployableManager.spawnedDeployablesByType.TryGetValue(typeof(TransportPipe), out pipes));
+			List<JDeployable> pipes = JDeployableManager.GetSpawned<TransportPipe>();
+			if (pipes.Count == 0)
 				return false;
 
 			foreach (TransportPipe p in pipes) {

@@ -11,12 +11,9 @@ namespace Oxide.Plugins.JCore {
 
 	public class JDeployableManager {
 
-		// TODO
-		// distributive deployable update
-
 		// Deployables that are currently spawned
-		public static Dictionary<int, JDeployable> spawnedDeployables = new Dictionary<int, JDeployable>();
-		public static Dictionary<Type, List<JDeployable>> spawnedDeployablesByType = new Dictionary<Type, List<JDeployable>>();
+		private static Dictionary<int, JDeployable> spawnedDeployables = new Dictionary<int, JDeployable>();
+		private static Dictionary<Type, List<JDeployable>> spawnedDeployablesByType = new Dictionary<Type, List<JDeployable>>();
 
 		private static void SpawnedDeployablesAdd(int id, JDeployable instance, Type type) {
 			spawnedDeployables.Add(id, instance);
@@ -38,6 +35,28 @@ namespace Oxide.Plugins.JCore {
 				spawnedDeployablesByType[type].Remove(instance);
 			}
 		}
+
+		/// <summary>
+		/// Get List of spawned deployables of type T
+		/// </summary>
+		/// <typeparam name="T"></typeparam>
+		/// <returns></returns>
+		public static List<JDeployable> GetSpawned<T>() where T : JDeployable {
+
+			List<JDeployable> spawned;
+			spawnedDeployablesByType.TryGetValue(typeof(T), out spawned);
+			return spawned;
+		}
+
+		/// <summary>
+		/// Get Dictionary of all spawned deployables.  Key = Id and Value = JDeployable
+		/// </summary>
+		/// <returns></returns>
+		public static Dictionary<int, JDeployable> GetSpawned() {
+			return spawnedDeployables;
+		}
+
+		#region Update
 
 		private static Dictionary<Type, int> CurrentUpdateTimeslot = new Dictionary<Type, int>();
 
@@ -101,6 +120,8 @@ namespace Oxide.Plugins.JCore {
 			}
 
 		}
+
+		#endregion
 
 		#region Save and Load
 

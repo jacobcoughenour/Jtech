@@ -239,7 +239,6 @@
     <Compile Include="Core\Attributes\JUpdateAttribute.cs" />
     <Compile Include="Core\Attributes\JInfoAttribute.cs" />
     <Compile Include="Core\Attributes\JRequirementAttribute.cs" />
-    <Compile Include="Core\IUpdateable.cs" />
     <Compile Include="Core\Util\Icons.cs" />
     <Compile Include="Core\Cui.cs" />
     <Compile Include="Core\DataManager.cs" />

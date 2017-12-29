@@ -320,6 +320,8 @@ namespace Oxide.Plugins.JCore {
 				return;
 			}
 
+			requirements.OrderBy(x => x.ItemId); // order requirements by their item id (just like the rust crafting menu)
+
 			// get JUpdate attribute
 			JUpdateAttribute jupdate = (JUpdateAttribute) System.Attribute.GetCustomAttribute(typeof(T), typeof(JUpdateAttribute));
 

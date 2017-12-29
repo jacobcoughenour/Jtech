@@ -152,11 +152,12 @@ namespace Oxide.Plugins.JCore {
 						Interface.Oxide.LogWarning($"[JCore] Failed to Load Deployable {de.Value} {de.Key}");
 				}
 			}
-			
-			Interface.Oxide.LogInfo($"[JCore] --- {totalloadcount} JDeployables Loaded ---");
+
+			string top = $"--- {totalloadcount} JDeployable(s) Loaded ---";
+			Interface.Oxide.LogInfo($"[JCore] {top}");
 			foreach (var count in loadcount)
-				Interface.Oxide.LogInfo($"[JCore] > {count.Value} {count.Key}");
-			Interface.Oxide.LogInfo($"[JCore] -----------------------------");
+				Interface.Oxide.LogInfo($"[JCore] > {count.Value} {count.Key}(s)");
+			Interface.Oxide.LogInfo($"[JCore] {new String('-', top.Length)}");
 		}
 
 		private static bool LoadJDeployable(int id, DeployableSaveData data) {
@@ -232,10 +233,13 @@ namespace Oxide.Plugins.JCore {
 				}
 			}
 
-			Interface.Oxide.LogInfo($"[JCore] --- {totalsavecount} JDeployables Saved ---");
-			foreach (var count in savecount)
-				Interface.Oxide.LogInfo($"[JCore] > {count.Value} {count.Key}");
-			Interface.Oxide.LogInfo($"[JCore] ----------------------------");
+			string top = $"--- {totalsavecount} JDeployable(s) Saved ---";
+			Interface.Oxide.LogInfo($"[JCore] {top}");
+			foreach (var count in savecount) {
+				if (count.Value > 0)
+					Interface.Oxide.LogInfo($"[JCore] > {count.Value} {count.Key}(s)");
+			}
+			Interface.Oxide.LogInfo($"[JCore] {new String('-', top.Length)}");
 			
 		}
 

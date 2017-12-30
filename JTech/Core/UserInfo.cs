@@ -12,8 +12,9 @@ namespace Oxide.Plugins.JCore {
 		public InputState input;
 
 		private bool isHoldingHammer;
+		private bool isHoldingPlaceholder;
 		private bool isDown;
-		private uint lastActiveItem;
+		private Item lastActiveItem;
 		private float startPressingTime;
 
 		private string overlay; // uid for overlay cui instance
@@ -24,9 +25,16 @@ namespace Oxide.Plugins.JCore {
 		private Coroutine MessageTextShow;
 		private Coroutine MessageTextHide;
 
+		private Coroutine _HidePlaceholder;
 		private bool isPlacing;
 		private Type placingType;
 		public List<BaseEntity> placingSelected;
+		private Item placingPlaceholder;
+		private BaseEntity placingPlaceholderPlaced;
+		private bool placingtookhammer = false;
+		private bool movingplaceholder = false;
+		private ulong hammerskin;
+		private int beltposition;
 
 		/// <summary>
 		/// Get/create UserInfo from a BasePlayer.
@@ -39,8 +47,9 @@ namespace Oxide.Plugins.JCore {
 			player = GetComponent<BasePlayer>();
 			input = player.serverInput;
 			enabled = true;
-			lastActiveItem = 0;
+			lastActiveItem = null;
 			isOverlayOpen = false;
+			beltposition = -1;
 		}
 
 
@@ -51,13 +60,13 @@ namespace Oxide.Plugins.JCore {
 
 			// TODO detect when on a pipe and set violationlevel to 0
 			//player.violationLevel = 0;
-
-			if (player.svActiveItemID != lastActiveItem) {
-				OnPlayerActiveItemChanged();
-				lastActiveItem = player.svActiveItemID;
+			
+			if (player.GetActiveItem() != lastActiveItem) {
+				lastActiveItem = player.GetActiveItem();
+				OnPlayerActiveItemChanged(lastActiveItem);
 			}
 
-			if (!isOverlayOpen && isHoldingHammer) {
+			if (!isOverlayOpen && (isHoldingHammer || isPlacing)) {
 				if (input.WasJustPressed(BUTTON.FIRE_SECONDARY) && !isDown) {
 					startPressingTime = Time.realtimeSinceStartup;
 					isDown = true;
@@ -85,14 +94,28 @@ namespace Oxide.Plugins.JCore {
 		/// <summary>
 		/// When player's held item is changed.
 		/// </summary>
-		private void OnPlayerActiveItemChanged() {
-			var item = player.GetActiveItem();
-			isHoldingHammer = (item != null && item.info != null && (item.info.name == "hammer.item"));
+		private void OnPlayerActiveItemChanged(Item item) {
+			
+			isHoldingHammer = item != null && item.info != null && (item.info.name == "hammer.item");
+			
+			// if player changes held item while placing
+			if (item != null && beltposition != -1 && item.position != beltposition) {
+				CancelPlacing();
+				HideOverlay();
+			}
+		}
 
-			//if (item != null)
-			//	ShowMessageText(item.position.ToString(), "", "0.251 0.769 1 1");
-
-			// TODO if change from placeholder item, EndPlacing()
+		public bool? CanMoveItem(Item item, int targetSlot) {
+			if (isPlacing && beltposition != -1 && (item.position == beltposition || targetSlot == beltposition)) {
+				CancelPlacing();
+				return false;
+			}
+			if (isOverlayOpen && item.info != null && item.info.name == "hammer.item") {
+				CancelPlacing();
+				HideOverlay();
+				return false;
+			}
+			return null;
 		}
 
 		/// <summary>
@@ -105,7 +128,23 @@ namespace Oxide.Plugins.JCore {
 		/// </summary>
 		public void OnHammerHit(HitInfo hit) {
 			if (isPlacing) {
-				placingType.GetMethod("OnPlacingHammerHit")?.Invoke(null, new object[] { this, hit });
+				placingType?.GetMethod("OnPlacingHammerHit")?.Invoke(null, new object[] { this, hit });
+			}
+		}
+
+		/// <summary>
+		/// OnDeployPlaceholder for this player
+		/// </summary>
+		public static void OnDeployPlaceholder(BasePlayer basePlayer, BaseEntity entity) => Get(basePlayer).OnDeployPlaceholder(entity);
+
+		/// <summary>
+		/// OnDeployPlaceholder for this player
+		/// </summary>
+		public void OnDeployPlaceholder(BaseEntity entity) {
+			if (isPlacing && placingPlaceholder != null) {
+				placingType?.GetMethod("OnDeployPlaceholder")?.Invoke(null, new object[] { this, entity });
+				placingPlaceholder = null;
+				placingPlaceholderPlaced = entity;
 			}
 		}
 
@@ -199,6 +238,7 @@ namespace Oxide.Plugins.JCore {
 			//overlaytext = text;
 			//overlaysubtext = subtext;
 			isOverlayOpen = true;
+			beltposition = player.GetActiveItem().position;
 		}
 
 		/// <summary>
@@ -350,27 +390,69 @@ namespace Oxide.Plugins.JCore {
 			isPlacing = true;
 			placingType = deployabletype;
 			placingSelected = new List<BaseEntity>();
+			placingPlaceholder = (Item) deployabletype.GetMethod("GetPlaceholderItem")?.Invoke(null, new object[] { this });
+			beltposition = player.GetActiveItem().position;
 
-			var startplacingmethod = deployabletype.GetMethod("OnStartPlacing");
-			if (startplacingmethod != null)
-				startplacingmethod.Invoke(null, new object[] { this });
+			if (placingPlaceholder != null) {
+				ShowPlaceholder();
+			}
+
+			deployabletype.GetMethod("OnStartPlacing")?.Invoke(null, new object[] { this });
 			
+		}
+
+		private void ShowPlaceholder() {
+			if (!isPlacing || placingPlaceholder == null || !isHoldingHammer)
+				return;
+
+			if (_HidePlaceholder != null)
+				StopCoroutine(_HidePlaceholder); // cancel previous
+
+			hammerskin = player.GetActiveItem().skin;
+			placingtookhammer = true;
+			movingplaceholder = true;
+			player.GetActiveItem().Remove();
+			placingPlaceholder.MoveToContainer(player.inventory.containerBelt, beltposition);
+			movingplaceholder = false;
+		}
+
+		private void HidePlaceholder() {
+
+			if (_HidePlaceholder != null)
+				StopCoroutine(_HidePlaceholder); // cancel previous
+				
+			_HidePlaceholder = StartCoroutine(DelayHidePlaceholder());
+		}
+
+		private IEnumerator DelayHidePlaceholder() {
+			yield return new WaitForSecondsRealtime(0.01f);
+
+			if (placingPlaceholderPlaced != null) {
+				placingPlaceholderPlaced.Kill();
+			}
+
+			if (placingtookhammer)
+				ItemManager.CreateByName("hammer", 1, hammerskin).MoveToContainer(player.inventory.containerBelt, beltposition);
+			placingtookhammer = false;
+			beltposition = -1;
+			placingPlaceholder = null;
+			placingPlaceholderPlaced = null;
+
+			_HidePlaceholder = null;
 		}
 
 		private void EndPlacing() {
 
 			if (!isPlacing)
 				return;
-
-			if (placingType != null) {
-				var methodInfo = placingType.GetMethod("OnEndPlacing");
-				if (methodInfo != null)
-					methodInfo.Invoke(null, new object[] { this });
-			}
-
+			
+			placingType?.GetMethod("OnEndPlacing")?.Invoke(null, new object[] { this });
+			
 			isPlacing = false;
 			placingType = null;
 			placingSelected.Clear();
+
+			HidePlaceholder();
 		}
 
 		/// <summary>
@@ -394,15 +476,15 @@ namespace Oxide.Plugins.JCore {
 			if (!isPlacing) 
 				return;
 
-			if (!CanCraftDeployable(placingType) || !JDeployableManager.PlaceDeployable(placingType, this)) // if player can craft it and it is placed
-				return;
+			if (CanCraftDeployable(placingType) && JDeployableManager.PlaceDeployable(placingType, this)) { // if player can craft it and it is placed
 
-			CollectIngredients(placingType); // consume ingredients from player's inventory
+				CollectIngredients(placingType); // consume ingredients from player's inventory
 
-			JInfoAttribute info;
-			JDeployableManager.DeployableTypes.TryGetValue(placingType, out info);
+				JInfoAttribute info;
+				JDeployableManager.DeployableTypes.TryGetValue(placingType, out info);
 
-			ShowMessage($"{info.Name} Created", "", 3);
+				ShowMessage($"{info.Name} Created", "", 3);
+			}
 
 			EndPlacing();
 		}

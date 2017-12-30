@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Oxide.Game.Rust.Cui;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -6,7 +7,7 @@ using UnityEngine;
 namespace Oxide.Plugins.JCore {
 
 	public class JDeployable {
-		
+
 		// TODO
 		// handle entity hooks (health, damage, repair)
 		// owner, parent
@@ -15,10 +16,12 @@ namespace Oxide.Plugins.JCore {
 		// load/save
 
 		public class SaveData {
+
 			public ulong ownerId;
 			public string ownerName;
 			public bool isEnabled = true;
 			public float health;
+			public List<float> transform;
 			public Dictionary<string, string> custom = new Dictionary<string, string>();
 
 			/// <summary>
@@ -28,6 +31,41 @@ namespace Oxide.Plugins.JCore {
 			public void SetUser(UserInfo userInfo) {
 				this.ownerId = userInfo.player.userID;
 				this.ownerName = userInfo.player.displayName;
+			}
+
+			/// <summary>
+			/// Set transform
+			/// </summary>
+			/// <param name="transform"></param>
+			public void SetTransform(Transform transform) {
+				this.transform = new List<float>() {
+					transform.position.x,
+					transform.position.y,
+					transform.position.z,
+
+					transform.rotation.x,
+					transform.rotation.y,
+					transform.rotation.z,
+					transform.rotation.w,
+				};
+			}
+
+			/// <summary>
+			/// Get Position
+			/// </summary>
+			public Vector3 GetPosition() {
+				if (this.transform == null || this.transform.Count != 7)
+					return Vector3.zero;
+				return new Vector3(transform[0], transform[1], transform[2]);
+			}
+
+			/// <summary>
+			/// Get Rotation
+			/// </summary>
+			public Quaternion GetRotation() {
+				if (this.transform == null || this.transform.Count != 7)
+					return Quaternion.identity;
+				return new Quaternion(transform[3], transform[4], transform[5], transform[6]);
 			}
 
 			/// <summary>
@@ -65,7 +103,7 @@ namespace Oxide.Plugins.JCore {
 			/// <returns></returns>
 			public string Get(string name, string defaultvalue = "") {
 				string value;
-				if (this.custom.TryGetValue(name, out value)) 
+				if (this.custom.TryGetValue(name, out value))
 					return value;
 				return defaultvalue;
 			}
@@ -130,7 +168,7 @@ namespace Oxide.Plugins.JCore {
 		}
 
 		public void Kill(BaseNetworkable.DestroyMode mode = BaseNetworkable.DestroyMode.None, bool remove = true) {
-			if (!MainParent.IsDestroyed)
+			if (MainParent != null && !MainParent.IsDestroyed)
 				MainParent.Kill(mode);
 			if (remove) JDeployableManager.RemoveJDeployable(this.Id);
 		}
@@ -178,6 +216,26 @@ namespace Oxide.Plugins.JCore {
 		/// <returns>if user can start placing this deployable</returns>
 		public static bool CanStartPlacing(UserInfo userInfo) {
 			return true;
+		}
+
+		/// <summary>
+		/// Puts a placeholder item in player's hotbar used for placing this deployable.
+		/// OnDeployPlaceholder() is called when placeholder item is deployed.
+		/// </summary>
+		/// <param name="userInfo"></param>
+		/// <returns></returns>
+		public static Item GetPlaceholderItem(UserInfo userInfo) {
+			return null;
+		}
+
+		/// <summary>
+		/// Called when player deploys the placeholder item.
+		/// Use this to add to the deployed entity or destroy it and replace it.
+		/// Make sure you either call userInfo.DonePlacing() or userInfo.CancelPlacing().
+		/// </summary>
+		/// <param name="userInfo"></param>
+		/// <param name="baseEntity"></param>
+		public static void OnDeployPlaceholder(UserInfo userInfo, BaseNetworkable baseNetworkable) {
 		}
 
 		/// <summary>
@@ -236,7 +294,22 @@ namespace Oxide.Plugins.JCore {
 		public virtual bool Update(float timeDelta) {
 			return true;
 		}
-		
-	}
 
+		#region CUI
+
+		public virtual string GetMenuInfo(UserInfo userInfo) {
+			
+			//Cui.CreatePanel
+			return string.Empty;
+		}
+
+		public virtual string GetMenuContent(CuiElementContainer elements, UserInfo userInfo) {
+
+			//Cui.CreatePanel
+			return string.Empty;
+		}
+
+		#endregion
+
+	}
 }

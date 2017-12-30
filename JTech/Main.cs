@@ -50,6 +50,7 @@ namespace Oxide.Plugins {
 			if (users != null) {
 				foreach (UserInfo go in users) {
 					go.DestroyCui();
+					go.CancelPlacing();
 					GameObject.Destroy(go);
 				}
 			}
@@ -105,6 +106,18 @@ namespace Oxide.Plugins {
 		void OnPlayerSleepEnded(BasePlayer player) {
 			// Add UserInfo to player
 			UserInfo.Get(player);
+		}
+
+		void OnItemDeployed(Deployer deployer, BaseEntity entity) => UserInfo.Get(deployer?.GetOwnerPlayer())?.OnDeployPlaceholder(entity);
+
+		void OnEntityBuilt(Planner planner, GameObject go) {
+			BaseEntity entity = go?.GetComponent<BaseEntity>();
+			if (entity != null)
+				UserInfo.Get(planner?.GetOwnerPlayer())?.OnDeployPlaceholder(entity);
+		}
+
+		bool? CanMoveItem(Item item, PlayerInventory playerLoot, uint targetContainer, int targetSlot) {
+			return UserInfo.Get(playerLoot.GetComponent<BasePlayer>())?.CanMoveItem(item, targetSlot);
 		}
 
 		#endregion

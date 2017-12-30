@@ -404,6 +404,7 @@ namespace Oxide.Plugins.JCore {
 			}
 			if (!placed) {
 				// clean up if deployable spawned anything
+				userInfo.ShowErrorMessage("Failed to Spawn Deployable");
 				deployabletype.GetMethod("Kill")?.Invoke(instance, new object[] { BaseNetworkable.DestroyMode.None, false });
 				return false;
 			}

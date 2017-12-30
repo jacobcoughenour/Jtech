@@ -2,7 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 
-namespace Oxide.Plugins.JCore {
+namespace Oxide.Plugins.JTechCore {
 
 	public static class DataManager {
 		

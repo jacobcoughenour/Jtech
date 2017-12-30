@@ -5,7 +5,7 @@ using UnityEngine;
 using Oxide.Game.Rust.Cui;
 using System.Linq;
 
-namespace Oxide.Plugins.JCore {
+namespace Oxide.Plugins.JTechCore {
 
 	public static class Cui {
 

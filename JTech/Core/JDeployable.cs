@@ -4,7 +4,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace Oxide.Plugins.JCore {
+namespace Oxide.Plugins.JTechCore {
 
 	public class JDeployable {
 

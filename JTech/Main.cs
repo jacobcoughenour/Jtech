@@ -7,7 +7,7 @@ using Oxide.Plugins;
 using Oxide.Game.Rust.Cui;
 using Oxide.Core.Libraries.Covalence;
 using UnityEngine;
-using Oxide.Plugins.JCore;
+using Oxide.Plugins.JTechCore;
 
 namespace Oxide.Plugins {
 
@@ -64,7 +64,7 @@ namespace Oxide.Plugins {
 			List<UnityEngine.Object> uis = new List<UnityEngine.Object>();
 			foreach (var player in BasePlayer.activePlayerList) {
 				foreach (var c in player.GetComponents<Component>()) {
-					if (c.GetType().ToString() == "Oxide.Plugins.JCore.UserInfo") {
+					if (c.GetType().ToString() == "Oxide.Plugins.JTechCore.UserInfo") {
 						uis.Add(c);
 					}
 				}

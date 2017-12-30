@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
-using Oxide.Plugins.JCore;
+using Oxide.Plugins.JTechCore;
 using System;
 
 namespace Oxide.Plugins.JTechDeployables {
@@ -142,7 +142,7 @@ namespace Oxide.Plugins.JTechDeployables {
 
 			if (sourcecont == null || destcont == null || sourcecont == destcont)
 				return false;
-			
+
 			isWaterPipe = sourcecont is LiquidContainer;
 
 			flowrate = flowrates[int.Parse(data.Get("grade", "0"))];
@@ -184,7 +184,11 @@ namespace Oxide.Plugins.JTechDeployables {
 					block.enableSaving = false;
 					block.Spawn();
 					block.SetHealthToMax();
-				}
+				} else
+					return false;
+
+				//((DecayEntity) ent).GetNearbyBuildingBlock();
+
 
 				if (i != 0)
 					AddChildEntity((BaseCombatEntity) ent);
@@ -204,14 +208,12 @@ namespace Oxide.Plugins.JTechDeployables {
 
 		public override bool Update(float timeDelta) {
 			
-			// if one of the containers are destroyed, kill the pipe
+			// if container is destroyed, kill pipe
 			if (sourcecont == null || destcont == null) {
 				this.Kill(BaseNetworkable.DestroyMode.Gib);
 				return false;
 			}
-
 			
-		
 			if (this.data.isEnabled && sourcecont.inventory.itemList.Count > 0 && sourcecont.inventory.itemList[0] != null) {
 				
 				int amounttotake = Mathf.FloorToInt(timeDelta * flowrate);

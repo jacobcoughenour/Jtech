@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
-using Oxide.Plugins.JCore;
+using Oxide.Plugins.JTechCore;
 using System;
 
 namespace Oxide.Plugins.JTechDeployables {

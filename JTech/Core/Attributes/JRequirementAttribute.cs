@@ -3,7 +3,7 @@ using Oxide.Core;
 using Oxide.Plugins;
 using System.Collections.Generic;
 
-namespace Oxide.Plugins.JCore {
+namespace Oxide.Plugins.JTechCore {
 
 	[AttributeUsage(AttributeTargets.Class, AllowMultiple = true)]
 	public class JRequirementAttribute : Attribute {

@@ -5,7 +5,7 @@ using UnityEngine;
 using Oxide.Core.Plugins;
 using Oxide.Game.Rust.Cui;
 using Oxide.Core.Libraries.Covalence;
-using Oxide.Plugins.JCore;
+using Oxide.Plugins.JTechCore;
 
 namespace Oxide.Plugins.JTechDeployables {
 

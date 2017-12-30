@@ -38,7 +38,7 @@ namespace Oxide.Plugins.JTechDeployables {
 		private int flowrate;
 		
 		private static float pipesegdist = 3;
-		private static Vector3 pipefightoffset = new Vector3(0.0001f, 0, 0.0001f); // every other pipe segment is offset by this to remove z fighting
+		private static Vector3 pipefightoffset = new Vector3(0.001f, 0, 0.001f); // every other pipe segment is offset by this to remove z fighting
 
 
 		public static bool CanStartPlacing(UserInfo userInfo) {

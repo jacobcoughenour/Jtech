@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using Oxide.Core;
 
 namespace Oxide.Plugins.JTechCore {
 
@@ -16,6 +17,12 @@ namespace Oxide.Plugins.JTechCore {
 
 			data = new StoredData();
 			LoadData(ref data);
+
+			if (data == null) {
+				data = new StoredData();
+				Interface.Oxide.LogWarning("[JTechCore] save data is null?  Creating new save data...");
+				SaveData(data);
+			}
 		}
 
 		public static void Save() {

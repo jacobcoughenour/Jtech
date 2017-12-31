@@ -24,16 +24,16 @@ namespace Oxide.Plugins.JTechCore {
 		}
 
 		private static void SpawnedDeployablesRemove(int id, JDeployable instance) {
-
+			
 			spawnedDeployables.Remove(id);
 
 			Type type;
 			if (!TryGetType(instance.ToString(), out type))
 				return;
 
-			if (spawnedDeployablesByType.ContainsKey(type)) {
+			if (spawnedDeployablesByType.ContainsKey(type))
 				spawnedDeployablesByType[type].Remove(instance);
-			}
+
 		}
 
 		/// <summary>
@@ -300,12 +300,12 @@ namespace Oxide.Plugins.JTechCore {
 			JInfoAttribute info = (JInfoAttribute) System.Attribute.GetCustomAttribute(typeof(T), typeof(JInfoAttribute));
 
 			if (info == null) {
-				Interface.Oxide.LogWarning($"[JDeployableManager] Failed to register ({typeof(T)}) - Missing JInfoAttribute.");
+				Interface.Oxide.LogWarning($"[JTechCore] Failed to register ({typeof(T)}) - Missing JInfoAttribute.");
 				return;
 			}
 
 			if (DeployableTypes.ContainsKey(typeof(T)) || DeployableTypeRequirements.ContainsKey(typeof(T))) {
-				Interface.Oxide.LogWarning($"[JDeployableManager] [{info.PluginInfo.Title}] {info.Name} has already been registered!");
+				Interface.Oxide.LogWarning($"[JTechCore] [{info.PluginInfo.Title}] {info.Name} has already been registered!");
 				return;
 			}
 
@@ -313,10 +313,10 @@ namespace Oxide.Plugins.JTechCore {
 			List<JRequirementAttribute> requirements = System.Attribute.GetCustomAttributes(typeof(T), typeof(JRequirementAttribute)).OfType<JRequirementAttribute>().ToList();
 
 			if (requirements == null || requirements.Count == 0) {
-				Interface.Oxide.LogWarning($"[JDeployableManager] Failed to register ({typeof(T)}) - Missing JRequirementAttribute.");
+				Interface.Oxide.LogWarning($"[JTechCore] Failed to register ({typeof(T)}) - Missing JRequirementAttribute.");
 				return;
 			} else if (requirements.Count > 5) {
-				Interface.Oxide.LogWarning($"[JDeployableManager] Failed to register ({typeof(T)}) - More than 5 JRequirementAttribute are not allowed.");
+				Interface.Oxide.LogWarning($"[JTechCore] Failed to register ({typeof(T)}) - More than 5 JRequirementAttribute are not allowed.");
 				return;
 			}
 
@@ -326,7 +326,7 @@ namespace Oxide.Plugins.JTechCore {
 			JUpdateAttribute jupdate = (JUpdateAttribute) System.Attribute.GetCustomAttribute(typeof(T), typeof(JUpdateAttribute));
 
 			if (jupdate == null) {
-				Interface.Oxide.LogWarning($"[JDeployableManager] Failed to register ({typeof(T)}) - Missing JUpdateAttribute.");
+				Interface.Oxide.LogWarning($"[JTechCore] Failed to register ({typeof(T)}) - Missing JUpdateAttribute.");
 				return;
 			} 
 
@@ -336,7 +336,7 @@ namespace Oxide.Plugins.JTechCore {
 			if (!spawnedDeployablesByType.ContainsKey(typeof(T)))
 				spawnedDeployablesByType.Add(typeof(T), new List<JDeployable>());
 
-			Interface.Oxide.LogInfo($"[JDeployableManager] Registered Deployable: [{info.PluginInfo.Title}] {info.Name}");
+			Interface.Oxide.LogInfo($"[JTechCore] Registered Deployable: [{info.PluginInfo.Title}] {info.Name}");
 			
 		}
 

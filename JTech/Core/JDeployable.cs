@@ -119,6 +119,7 @@ namespace Oxide.Plugins.JTechCore {
 
 		public int Id;
 		public SaveData data;
+		private bool isBeingDestroyed = false;
 
 		private BaseCombatEntity MainParent;
 		private List<BaseCombatEntity> ChildEntities = new List<BaseCombatEntity>();
@@ -168,19 +169,22 @@ namespace Oxide.Plugins.JTechCore {
 		}
 
 		public void Kill(BaseNetworkable.DestroyMode mode = BaseNetworkable.DestroyMode.None, bool remove = true) {
-			if (MainParent != null && !MainParent.IsDestroyed)
+			if (isBeingDestroyed)
+				return;
+
+			if (MainParent != null && !MainParent.IsDestroyed) {
+				isBeingDestroyed = true;
 				MainParent.Kill(mode);
-			if (remove) JDeployableManager.RemoveJDeployable(this.Id);
+			}
+
+			if (remove)
+				JDeployableManager.RemoveJDeployable(this.Id);
 		}
 
 		public class Child : MonoBehaviour {
 			public JDeployable parent;
 		}
-
-		public void OnChildKilled() {
-			this.Kill(BaseNetworkable.DestroyMode.Gib);
-		}
-
+		
 		#region Child Entity Hooks
 
 		/// <summary>

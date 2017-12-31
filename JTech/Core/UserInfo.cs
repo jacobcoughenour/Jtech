@@ -430,6 +430,8 @@ namespace Oxide.Plugins.JTechCore {
 
 			if (placingPlaceholderPlaced != null) {
 				placingPlaceholderPlaced.Kill();
+			} else if (placingPlaceholder != null) {
+				placingPlaceholder.RemoveFromContainer();
 			}
 
 			if (placingtookhammer)

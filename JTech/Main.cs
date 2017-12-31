@@ -26,6 +26,7 @@ namespace Oxide.Plugins {
 				foreach (var player in BasePlayer.activePlayerList)
 					UserInfo.Get(player);
 			});
+
 			
 		}
 
@@ -135,23 +136,21 @@ namespace Oxide.Plugins {
 			//PM.DEBUGEND
 		}
 
-		void OnStructureDemolish(BaseCombatEntity entity, BasePlayer player) {
+		void OnStructureDemolish(BaseCombatEntity entity, BasePlayer player) => OnKilledChild((BaseEntity) entity);
+		void OnEntityDeath(BaseCombatEntity entity, HitInfo info) => OnKilledChild((BaseEntity) entity);
+		void OnEntityKill(BaseNetworkable entity) => OnKilledChild((BaseEntity) entity);
+
+		void OnKilledChild(BaseEntity entity) {
 			JDeployable.Child c = entity?.GetComponent<JDeployable.Child>();
 			if (c != null && c.parent != null)
-				c.parent.OnChildKilled();
+				KillDeployable(c.parent);
 		}
 
-		void OnEntityDeath(BaseCombatEntity entity, HitInfo info) {
-			JDeployable.Child c = entity?.GetComponent<JDeployable.Child>();
-			if (c != null && c.parent != null)
-				c.parent.OnChildKilled();
+		void KillDeployable(JDeployable deployable) {
+			NextFrame(() => {
+				deployable.Kill(BaseNetworkable.DestroyMode.Gib);
+			});
 		}
-
-		//void OnEntityKill(BaseNetworkable entity) {
-		//	JDeployable.Child c = entity.GetComponent<JDeployable.Child>();
-		//	if (c != null && c.parent != null)
-		//		c.parent.OnChildKilled();
-		//}
 
 		bool? OnEntityTakeDamage(BaseCombatEntity entity, HitInfo hitInfo) {
 
@@ -167,7 +166,7 @@ namespace Oxide.Plugins {
 						if (newhealth > 0f)
 							c.parent.SetHealth(newhealth);
 						else
-							c.parent.OnChildKilled();
+							KillDeployable(c.parent);
 					}
 					return true;
 				}

@@ -18,11 +18,14 @@ namespace Oxide.Plugins.JTechCore {
 		private Item lastActiveItem;
 		private float startPressingTime;
 
-		private string overlay; // uid for overlay cui instance
+		private string overlay;
 		private string messageoverlay;
+		private string menu;
+
 		private string currentmessageoverlaytext;
 		private string currentmessageoverlaysubtext;
 		private bool isOverlayOpen;
+		private bool isMenuOpen;
 		private Coroutine MessageTextShow;
 		private Coroutine MessageTextHide;
 
@@ -50,6 +53,7 @@ namespace Oxide.Plugins.JTechCore {
 			enabled = true;
 			lastActiveItem = null;
 			isOverlayOpen = false;
+			isMenuOpen = false;
 			beltposition = -1;
 		}
 
@@ -219,6 +223,15 @@ namespace Oxide.Plugins.JTechCore {
 		#region CUI
 
 		/// <summary>
+		/// Destroy all userinfo cui for the player
+		/// </summary>
+		public void DestroyCui() {
+			HideMenu();
+			HideOverlay();
+			HideMessageText();
+		}
+
+		/// <summary>
 		/// Show overlay menu for the given BasePlayer
 		/// </summary>
 		public static void ShowOverlay(BasePlayer basePlayer) => Get(basePlayer).ShowOverlay();
@@ -229,6 +242,7 @@ namespace Oxide.Plugins.JTechCore {
 		public void ShowOverlay() {
 			HideOverlay(); // just in case
 			CancelPlacing(); // cancel placing
+			HideMenu();
 			
 			var elements = new CuiElementContainer();
 
@@ -254,14 +268,6 @@ namespace Oxide.Plugins.JTechCore {
 			if (!string.IsNullOrEmpty(overlay))
 				Game.Rust.Cui.CuiHelper.DestroyUi(player, overlay);
 			isOverlayOpen = false;
-		}
-
-		/// <summary>
-		/// Destroy all userinfo cui for the player
-		/// </summary>
-		public void DestroyCui() {
-			HideOverlay();
-			HideMessageText();
 		}
 
 		/// <summary>
@@ -365,6 +371,42 @@ namespace Oxide.Plugins.JTechCore {
 			MessageTextHide = null;
 		}
 
+		/// <summary>
+		/// Show JDeployable menu for the given BasePlayer
+		/// </summary>
+		public static void ShowMenu(BasePlayer basePlayer, JDeployable deployable) => Get(basePlayer).ShowMenu(deployable);
+
+		/// <summary>
+		/// Show overlay menu for parent player
+		/// </summary>
+		public void ShowMenu(JDeployable deployable) {
+			HideMenu(); // just in case
+			CancelPlacing(); // cancel placing
+			HideOverlay();
+
+			var elements = new CuiElementContainer();
+
+			menu = Cui.Menu.CreateMenu(elements, this, deployable);
+
+			CuiHelper.AddUi(player, elements);
+			
+			isMenuOpen = true;
+		}
+
+		/// <summary>
+		/// Hide overlay menu for the given BasePlayer
+		/// </summary>
+		public static void HideMenu(BasePlayer basePlayer) => Get(basePlayer).HideMenu();
+
+		/// <summary>
+		/// Hide overlay menu for parent player
+		/// </summary>
+		public void HideMenu() {
+			if (!string.IsNullOrEmpty(menu))
+				Game.Rust.Cui.CuiHelper.DestroyUi(player, menu);
+			isMenuOpen = false;
+		}
+
 		#endregion
 
 		#region Deployable Placing
@@ -387,7 +429,8 @@ namespace Oxide.Plugins.JTechCore {
 			}
 
 			HideOverlay();
-			
+			HideMenu();
+
 			isPlacing = true;
 			placingType = deployabletype;
 			placingSelected = new List<BaseEntity>();

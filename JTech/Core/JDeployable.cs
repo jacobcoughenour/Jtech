@@ -9,11 +9,7 @@ namespace Oxide.Plugins.JTechCore {
 	public class JDeployable {
 
 		// TODO
-		// handle entity hooks (health, damage, repair)
-		// owner, parent
 		// cui menu
-		// spawn/destroy 
-		// load/save
 
 		public class SaveData {
 
@@ -184,14 +180,26 @@ namespace Oxide.Plugins.JTechCore {
 		public class Child : MonoBehaviour {
 			public JDeployable parent;
 		}
-		
+
 		#region Child Entity Hooks
+
+		/// <summary>
+		/// OnHammerHit hook for child entities
+		/// </summary>
+		public virtual void OnHammerHit(BasePlayer player, HitInfo hit) {
+		}
 
 		/// <summary>
 		/// OnStructureRepair hook for child entities
 		/// </summary>
 		public virtual void OnStructureRepair(BaseCombatEntity entity, BasePlayer player) {
 			SetHealth(entity.health);
+		}
+
+		/// <summary>
+		/// OnStructureRotate hook for child entities
+		/// </summary>
+		public virtual void OnStructureRotate(BaseCombatEntity entity, BasePlayer player) {
 		}
 
 		/// <summary>
@@ -206,6 +214,25 @@ namespace Oxide.Plugins.JTechCore {
 		/// </summary>
 		public virtual bool? CanPickupEntity(Child child, BasePlayer player) {
 			return null;
+		}
+
+		public virtual bool? CanAdministerVending(VendingMachine machine, BasePlayer player) {
+			return null;
+		}
+
+		public virtual bool? CanUseVending(VendingMachine machine, BasePlayer player) {
+			return null;
+		}
+
+		public virtual bool? CanVendingAcceptItem(VendingMachine machine, Item item) {
+			return null;
+		}
+
+		public virtual object OnRotateVendingMachine(VendingMachine machine, BasePlayer player) {
+			return null;
+		}
+
+		public virtual void OnToggleVendingBroadcast(VendingMachine machine, BasePlayer player) {
 		}
 
 		#endregion
@@ -301,10 +328,38 @@ namespace Oxide.Plugins.JTechCore {
 
 		#region CUI
 
-		public virtual string GetMenuInfo(UserInfo userInfo) {
-			
-			//Cui.CreatePanel
-			return string.Empty;
+		private HashSet<UserInfo> _playerslookingatmenu = new HashSet<UserInfo>();
+
+		public void ShowMenu(BasePlayer player) => ShowMenu(UserInfo.Get(player));
+
+		public void ShowMenu(UserInfo userInfo) {
+			userInfo.ShowMenu(this);
+			_playerslookingatmenu.Add(userInfo);
+		}
+
+		public void HideMenu(BasePlayer player) => HideMenu(UserInfo.Get(player));
+
+		public void HideMenu(UserInfo userInfo) {
+			userInfo.HideMenu();
+			_playerslookingatmenu.Remove(userInfo);
+		}
+
+		public void HideMenuAll() {
+			HashSet<UserInfo> p = _playerslookingatmenu;
+			foreach (var ui in p)
+				HideMenu(ui);
+		}
+
+		public void UpdateMenu() {
+			HashSet<UserInfo> p = _playerslookingatmenu;
+			foreach (var ui in p) {
+				HideMenu(ui);
+				ShowMenu(ui);
+			}
+		}
+
+		public virtual Dictionary<string, string> GetMenuInfo(UserInfo userInfo) {
+			return new Dictionary<string, string>();
 		}
 
 		public virtual string GetMenuContent(CuiElementContainer elements, UserInfo userInfo) {
@@ -312,6 +367,7 @@ namespace Oxide.Plugins.JTechCore {
 			//Cui.CreatePanel
 			return string.Empty;
 		}
+
 
 		#endregion
 

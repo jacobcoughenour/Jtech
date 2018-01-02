@@ -15,7 +15,7 @@ namespace Oxide.Plugins {
 	class JTech : RustPlugin {
 
 		#region Oxide Hooks
-		
+
 		void Init() {
 
 			// TODO
@@ -126,10 +126,9 @@ namespace Oxide.Plugins {
 		#region Structure
 
 		void OnHammerHit(BasePlayer player, HitInfo hit) {
-			// TODO
-			// open menu if deployable
 
 			UserInfo.OnHammerHit(player, hit);
+			hit.HitEntity?.GetComponent<JDeployable.Child>()?.parent.OnHammerHit(player, hit);
 
 			//PM.DEBUGSTART
 			ListComponentsDebug(player, hit.HitEntity);
@@ -158,7 +157,9 @@ namespace Oxide.Plugins {
 
 				JDeployable.Child c = entity?.GetComponent<JDeployable.Child>();
 				if (c != null && c.parent != null) {
-					
+
+					if (true) // if nodecay
+						hitInfo.damageTypes.Scale(Rust.DamageType.Decay, 0f); // no decay damage
 					float damage = hitInfo.damageTypes.Total();
 					if (damage > 0) {
 						
@@ -174,10 +175,10 @@ namespace Oxide.Plugins {
 			return null;
 		}
 
-		bool? OnStructureUpgrade(BaseCombatEntity entity, BasePlayer player, BuildingGrade.Enum grade) {
+		bool? CanPickupEntity(BaseCombatEntity entity, BasePlayer player) {
 			JDeployable.Child c = entity?.GetComponent<JDeployable.Child>();
 			if (c != null && c.parent != null && player != null)
-				return c.parent.OnStructureUpgrade(c, player, grade);
+				return c.parent.CanPickupEntity(c, player);
 			return null;
 		}
 
@@ -187,12 +188,36 @@ namespace Oxide.Plugins {
 				NextTick(() => c.parent.OnStructureRepair(entity, player));
 		}
 
-		bool? CanPickupEntity(BaseCombatEntity entity, BasePlayer player) {
+		void OnStructureRotate(BaseCombatEntity entity, BasePlayer player) {
+			entity?.GetComponent<JDeployable.Child>()?.parent.OnStructureRotate(entity, player);
+		}
+
+		bool? OnStructureUpgrade(BaseCombatEntity entity, BasePlayer player, BuildingGrade.Enum grade) {
 			JDeployable.Child c = entity?.GetComponent<JDeployable.Child>();
 			if (c != null && c.parent != null && player != null)
-				return c.parent.CanPickupEntity(c, player);
+				return c.parent.OnStructureUpgrade(c, player, grade);
 			return null;
 		}
+
+
+		#endregion
+
+		#region Vending Machine
+
+		bool? CanAdministerVending(VendingMachine machine, BasePlayer player) =>
+			machine?.GetComponent<JDeployable.Child>()?.parent.CanAdministerVending(machine, player);
+
+		bool? CanUseVending(VendingMachine machine, BasePlayer player) =>
+			machine?.GetComponent<JDeployable.Child>()?.parent.CanUseVending(machine, player);
+
+		bool? CanVendingAcceptItem(VendingMachine machine, Item item) =>
+			machine?.GetComponent<JDeployable.Child>()?.parent.CanVendingAcceptItem(machine, item);
+
+		object OnRotateVendingMachine(VendingMachine machine, BasePlayer player) =>
+			machine?.GetComponent<JDeployable.Child>()?.parent.OnRotateVendingMachine(machine, player);
+
+		void OnToggleVendingBroadcast(VendingMachine machine, BasePlayer player) =>
+			machine?.GetComponent<JDeployable.Child>()?.parent.OnToggleVendingBroadcast(machine, player);
 
 		#endregion
 
@@ -212,6 +237,11 @@ namespace Oxide.Plugins {
 		[ConsoleCommand("jtech.closeoverlay")]
 		private void closeoverlay(ConsoleSystem.Arg arg) {
 			UserInfo.HideOverlay(arg.Player());
+		}
+
+		[ConsoleCommand("jtech.closemenu")]
+		private void closemenu(ConsoleSystem.Arg arg) {
+			UserInfo.HideMenu(arg.Player());
 		}
 
 		[ConsoleCommand("jtech.startplacing")]

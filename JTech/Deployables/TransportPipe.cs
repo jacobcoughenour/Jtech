@@ -5,7 +5,7 @@ using System;
 
 namespace Oxide.Plugins.JTechDeployables {
 
-	[JInfo(typeof(JTech), "Transport Pipe", "https://vignette.wikia.nocookie.net/play-rust/images/4/4a/Metal_Pipe_icon.png/revision/latest/scale-to-width-down/200")]
+	[JInfo(typeof(JTech), "Transport Pipe", "https://vignette.wikia.nocookie.net/play-rust/images/4/4a/Metal_Pipe_icon.png/revision/latest/scale-to-width-down/200", "Transfers items or liquids between containers.  Upgrade it with the hammer to increase the flow rate and functionality.")]
 	[JRequirement("wood", 20, "segment")]
 	[JUpdate(4, 16)]
 
@@ -107,6 +107,10 @@ namespace Oxide.Plugins.JTechDeployables {
 			data.Set("grade", "0");
 
 			return Spawn();
+		}
+
+		public override void OnHammerHit(BasePlayer player, HitInfo hit) {
+			ShowMenu(player);
 		}
 
 		public override bool? OnStructureUpgrade(Child child, BasePlayer player, BuildingGrade.Enum grade) {

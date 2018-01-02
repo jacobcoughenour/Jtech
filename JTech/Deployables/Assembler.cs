@@ -4,8 +4,8 @@ using Oxide.Plugins.JTechCore;
 using System;
 
 namespace Oxide.Plugins.JTechDeployables {
-
-	[JInfo(typeof(JTech), "Assembler", "https://i.imgur.com/R9mD3VQ.png")]
+	
+	[JInfo(typeof(JTech), "Assembler", "https://i.imgur.com/R9mD3VQ.png", "This high-tech machine can assemble any item from it's blueprint with the item's ingredients and some low grade fuel.")]
 	[JRequirement("vending.machine"), JRequirement("gears", 5), JRequirement("metal.refined", 20)]
 	[JUpdate(10, 5)]
 
@@ -39,8 +39,13 @@ namespace Oxide.Plugins.JTechDeployables {
 			BaseEntity placeholder = userInfo.placingSelected[0];
 
 			data.SetTransform(placeholder.transform);
+			
+			if (!Spawn())
+				return false;
 
-			return Spawn();
+			Effect.server.Run("assets/bundled/prefabs/fx/building/stone_gib.prefab", GetEntities()[0], 0U, Vector3.zero, Vector3.zero);
+
+			return true;
 		}
 
 		public override bool Spawn() {
@@ -57,10 +62,61 @@ namespace Oxide.Plugins.JTechDeployables {
 			vendingMachine.shopName = "Assembler";
 			vendingMachine.SetFlag(BaseEntity.Flags.Reserved4, false, false);
 			vendingMachine.UpdateMapMarker();
+			vendingMachine.SendNetworkUpdate(BasePlayer.NetworkQueue.Update);
 
 			SetMainParent((BaseCombatEntity) ent);
 
+			
+			//DroppedItemContainer container = (DroppedItemContainer) GameManager.server.CreateEntity("assets/prefabs/misc/item drop/item_drop.prefab", Vector3.zero);
+			//if (container == null)
+			//	return false;
+
+			//container.playerName = "name test";
+			//container.enableSaving = false;
+			//container.Spawn();
+
+			//container.TakeFrom(new ItemContainer());
+
+			//AddChildEntity((BaseCombatEntity) container);
+
+
 			return true;
 		}
+
+		#region Hooks
+
+		public override bool? CanAdministerVending(VendingMachine machine, BasePlayer player) {
+			ShowMenu(player);
+			return null;
+		}
+
+		public override bool? CanUseVending(VendingMachine machine, BasePlayer player) {
+			ShowMenu(player);
+			return false;
+		}
+
+		public override bool? CanVendingAcceptItem(VendingMachine machine, Item item) {
+			// TODO
+			// accept items into input storage
+			return false;
+		}
+
+		public override object OnRotateVendingMachine(VendingMachine machine, BasePlayer player) {
+			machine.transform.rotation = Quaternion.LookRotation(-machine.transform.forward, machine.transform.up);
+			data.SetTransform(machine.transform);
+			machine.SendNetworkUpdate(BasePlayer.NetworkQueue.Update);
+			return false;
+		}
+
+		public override void OnToggleVendingBroadcast(VendingMachine machine, BasePlayer player) {
+			// disable broadcast
+			vendingMachine.SetFlag(BaseEntity.Flags.Reserved4, false, false);
+			vendingMachine.UpdateMapMarker();
+			ShowMenu(player);
+		}
+
+
+
+		#endregion
 	}
 }

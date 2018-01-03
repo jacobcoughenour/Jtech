@@ -170,7 +170,7 @@ namespace Oxide.Plugins.JTechCore {
 			if (requirements == null) return false;
 
 			foreach (JRequirementAttribute req in requirements) {
-				if (!this.DoesHaveUsableItem(req.ItemId, req.ItemAmount))
+				if (!this.HasUsableItem(req.ItemId, req.ItemAmount))
 					return false;
 			}
 			return true;
@@ -182,7 +182,7 @@ namespace Oxide.Plugins.JTechCore {
 		/// <param name="item"></param>
 		/// <param name="iAmount"></param>
 		/// <returns></returns>
-		public bool DoesHaveUsableItem(int item, int iAmount) {
+		public bool HasUsableItem(int item, int iAmount) {
 			int num = 0;
 			foreach (ItemContainer container in player.inventory.crafting.containers)
 				num += container.GetAmount(item, true);
@@ -403,8 +403,28 @@ namespace Oxide.Plugins.JTechCore {
 		/// </summary>
 		public void HideMenu() {
 			if (!string.IsNullOrEmpty(menu))
-				Game.Rust.Cui.CuiHelper.DestroyUi(player, menu);
+				CuiHelper.DestroyUi(player, menu);
 			isMenuOpen = false;
+		}
+
+		public static void HandleMenuButton(BasePlayer basePlayer, string deployableid, string value) => Get(basePlayer).HandleMenuButton(deployableid, value);
+
+		public void HandleMenuButton(string deployableid, string value) {
+			// TODO permissions
+			JDeployable deployable;
+			if (JDeployableManager.TryGetJDeployable(int.Parse(deployableid), out deployable)) {
+				deployable.MenuButtonCallback(this, value);
+			}
+		}
+
+		public static void HandleMenuOnOffButton(BasePlayer basePlayer, string deployableid) => Get(basePlayer).HandleMenuOnOffButton(deployableid);
+
+		public void HandleMenuOnOffButton(string deployableid) {
+			// TODO permissions
+			JDeployable deployable;
+			if (JDeployableManager.TryGetJDeployable(int.Parse(deployableid), out deployable)) {
+				deployable.MenuOnOffButton(this);
+			}
 		}
 
 		#endregion

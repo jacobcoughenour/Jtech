@@ -56,6 +56,10 @@ namespace Oxide.Plugins.JTechCore {
 			return spawnedDeployables;
 		}
 
+		public static bool TryGetJDeployable(int id, out JDeployable deployable) {
+			return spawnedDeployables.TryGetValue(id, out deployable);
+		}
+
 		#region Update
 
 		private static Dictionary<Type, int> CurrentUpdateTimeslot = new Dictionary<Type, int>();

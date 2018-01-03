@@ -62,7 +62,7 @@ namespace Oxide.Plugins.JTechCore {
 			return cuiElement;
 		}
 
-		public static CuiElement CreateItemIcon(string parent = "Hud", string anchorMin = "0 0", string anchorMax = "1 1", string imageurl = "", string color = "1 1 1 1") => new CuiElement {
+		public static CuiElement CreateIcon(string parent = "Hud", string anchorMin = "0 0", string anchorMax = "1 1", string imageurl = "", string color = "1 1 1 1") => new CuiElement {
 			Parent = parent,
 			Components = {
 				new CuiRawImageComponent {
@@ -111,6 +111,45 @@ namespace Oxide.Plugins.JTechCore {
 		//	return string.Join("", lines.ToArray());
 		//	//return string.Join("\n", lines.ToArray());
 		//}
+
+		public static CuiButton CreateMenuButton(JDeployable dep, ButtonInfo info, string anchorMin = "0 0", string anchorMax = "1 1", int fontSize = 15, string color = "0.8 0.8 0.8 0.2", string textcolor = "1 1 1 1") {
+			return CreateMenuButton(
+				info.State == ButtonInfo.ButtonState.Enabled ? $"jtech.menubutton {dep.Id} {info.Value}" : "", 
+				info.Label, anchorMin, anchorMax, fontSize, color, textcolor);
+		}
+
+		private static CuiButton CreateMenuButton(string command, string label, string anchorMin = "0 0", string anchorMax = "1 1", int fontSize = 15, string color = "0.8 0.8 0.8 0.2", string textcolor = "1 1 1 1") {
+			return new CuiButton {
+				Button = { Command = command, Color = color },
+				RectTransform = { AnchorMin = anchorMin, AnchorMax = anchorMax },
+				Text = { Text = label, FontSize = fontSize, Align = TextAnchor.MiddleCenter, Color = textcolor }
+			};
+		}
+
+		public class ButtonInfo {
+
+			public string Label { get; }
+			public string Value { get; }
+			public ButtonState State { get; }
+			public ButtonType Type { get; }
+
+			public enum ButtonState {
+				Enabled,
+				Disabled
+			}
+			public enum ButtonType {
+				Action, // string
+				Toggle, // bool
+				Enum    // enum
+			}
+
+			public ButtonInfo(string label, string value, ButtonState state = ButtonState.Enabled) {
+				Label = label;
+				Value = value;
+				State = state;
+				Type = ButtonType.Action;
+			}
+		}
 
 		public static class Menu {
 
@@ -183,7 +222,7 @@ namespace Oxide.Plugins.JTechCore {
 
 					// deployable icon
 					elements.Add(
-						CreateItemIcon(button, "0.05 0.383", "0.95 0.95", info.IconUrl, canCraftDeployable ? "1 1 1 1" : "0.749 0.922 1 0.5")
+						CreateIcon(button, "0.05 0.383", "0.95 0.95", info.IconUrl, canCraftDeployable ? "1 1 1 1" : "0.749 0.922 1 0.5")
 					);
 
 					// button bottom area
@@ -230,7 +269,7 @@ namespace Oxide.Plugins.JTechCore {
 
 						JRequirementAttribute cur = requirements[r];
 
-						bool hasRequirement = userInfo.DoesHaveUsableItem(cur.ItemId, cur.ItemAmount);
+						bool hasRequirement = userInfo.HasUsableItem(cur.ItemId, cur.ItemAmount);
 
 						float pos = 0.6f - (numofrequirements*0.1f) + r*(0.2f) - (cur.PerUnit != string.Empty ? cur.PerUnit.Length*0.026f + 0.09f : 0);
 						string min = $"{pos - 0.1f} 0";
@@ -238,7 +277,7 @@ namespace Oxide.Plugins.JTechCore {
 						
 						// item icon
 						elements.Add(
-							CreateItemIcon(materiallist, min, max, Util.Icons.GetItemIconURL(cur.ItemShortName, 64), hasRequirement ? "1 1 1 1" : "1 1 1 0.5")
+							CreateIcon(materiallist, min, max, Util.Icons.GetItemIconURL(cur.ItemShortName, 64), hasRequirement ? "1 1 1 1" : "1 1 1 0.5")
 						);
 						
 						// item amount
@@ -297,6 +336,16 @@ namespace Oxide.Plugins.JTechCore {
 				//		RectTransform = { AnchorMin = $"{0.5f - mainwidthaspect * 0.5f} {mainy - mainheight * 0.5f}", AnchorMax = $"{0.5f + mainwidthaspect * 0.5f} {mainy + mainheight * 0.5f}" }
 				//	}, parent
 				//);
+				
+				//return parent;
+
+				float gap = 0.0125f;
+
+				float centercontentheight = 0.8f;
+				float centercontentwidth = centercontentheight * mainaspect; // keep the main content square
+
+				// slight outline around main
+				FakeDropShadow(elements, parent, 0.5f - mainwidthaspect * 0.5f, mainy - mainheight * 0.5f, 0.5f + mainwidthaspect * 0.5f, mainy + mainheight * 0.5f, 0.005f * aspect, 0.005f, 1, "0.004 0.341 0.608 0.5");
 
 				// close overlay if you click the background
 				elements.Add(
@@ -307,23 +356,12 @@ namespace Oxide.Plugins.JTechCore {
 					}, parent
 				);
 
-				//return parent;
-
-				float gap = 0.0125f;
-
-				float centercontentheight = 0.8f;
-				float centercontentwidth = centercontentheight * mainaspect; // keep the main content square
-
 				string main = elements.Add(
 					new CuiPanel {
 						Image = { Color = "0.004 0.341 0.608 0" },
-						RectTransform = { AnchorMin = $"{0.5f - mainwidthaspect * 0.5f} {mainy - mainheight * 0.5f}", AnchorMax = $"{0.5f + mainwidthaspect * 0.5f} {mainy + mainheight * 0.5f}" },
+						RectTransform = { AnchorMin = $"{0.5f - mainwidthaspect * 0.5f} {mainy - mainheight * 0.5f}", AnchorMax = $"{0.5f + mainwidthaspect * 0.5f} {mainy + mainheight * 0.5f}" }
 					}, parent
 				);
-
-				// slight outline around main
-				FakeDropShadow(elements, parent, 0.5f - mainwidthaspect * 0.5f, mainy - mainheight * 0.5f, 0.5f + mainwidthaspect * 0.5f, mainy + mainheight * 0.5f, 0.005f * aspect, 0.005f, 1, "0.004 0.341 0.608 0.2");
-
 
 
 				// top
@@ -368,7 +406,7 @@ namespace Oxide.Plugins.JTechCore {
 				);
 
 				elements.Add(
-					CreateItemIcon(iconarea, $"{iconpadding} {iconpadding}", $"{1 - iconpadding} {1 - iconpadding}", info.IconUrl, "1 1 1 1")
+					CreateIcon(iconarea, $"{iconpadding} {iconpadding}", $"{1 - iconpadding} {1 - iconpadding}", info.IconUrl, "1 1 1 1")
 				);
 
 
@@ -378,22 +416,70 @@ namespace Oxide.Plugins.JTechCore {
 
 				string content = elements.Add(
 					new CuiPanel {
-						Image = { Color = "0.251 0.769 1 0.25" },
+						Image = { Color = "0 0 0 0" },
 						RectTransform = { AnchorMin = "0 0", AnchorMax = $"{centercontentwidth} {centercontentheight}" },
 					}, main
 				);
+				
+				string contentinside = elements.Add(
+					new CuiPanel {
+						Image = { Color = "0 0 0 0" },
+						RectTransform = { AnchorMin = $"0 0", AnchorMax = $"0.994 0.99" },
+					}, content
+				);
+
+				deployable.GetMenuContent(elements, contentinside, userInfo);
 
 
 				// actions
 
-				string actions = elements.Add(
+				string buttons = elements.Add(
 					new CuiPanel {
-						Image = { Color = "0 1 0 0" },
-						RectTransform = { AnchorMin = $"{centercontentwidth + gap * mainaspect} 0", AnchorMax = $"1 {centercontentheight}" },
+						Image = { Color = "0.251 0.769 1 0." },
+						RectTransform = { AnchorMin = $"{centercontentwidth + gap * mainaspect} 0", AnchorMax = $"1 {centercontentheight}" }
 					}, main
 				);
 
+				string buttonsinside = elements.Add(
+					new CuiPanel {
+						Image = { Color = "0 0 0 0" },
+						RectTransform = { AnchorMin = $"0 0", AnchorMax = $"0.985 0.99" },
+					}, buttons
+				);
 
+				List<ButtonInfo> buttoninfos = deployable.GetMenuButtons(userInfo);
+
+				float buttonspacing = 0.015f;
+				float maxheight = 0.2f;
+				float buttonratio = (1 + buttonspacing) / (buttoninfos.Count + 1);
+				float buttonheight = (buttonratio < (1 + buttonspacing) / (1 / maxheight) ? buttonratio : maxheight);
+
+				elements.Add(
+					CreateMenuButton(
+						$"jtech.menuonoffbutton {deployable.Id}", deployable.data.isEnabled ? "Turn Off" : "Turn On",
+						$"0 0", $"1 {buttonheight - buttonspacing}", 15,
+						deployable.data.isEnabled ? $"1 {61 / 255} 0 0.6" : $"0 {(float) 230 / 255} {(float) 118 / 255} 0.6", 
+						deployable.data.isEnabled ? "1 1 1 0.9" : "1 1 1 0.9"
+					),
+					buttonsinside
+				);
+
+				for (int i = 0; i < buttoninfos.Count; i++) {
+
+					int yi = i + 1;
+
+					elements.Add(
+						CreateMenuButton(
+							deployable, buttoninfos[i],
+							$"0 {(buttonheight * yi)}", $"1 {buttonheight * (yi + 1) - buttonspacing}"
+						),
+						buttonsinside
+					);
+				}
+
+				//elements.Add(
+				//	CreateIcon(button, $"0 0", $"1 1", "", "1 1 1 1")
+				//);
 
 				return parent;
 			}

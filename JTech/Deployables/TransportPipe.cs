@@ -41,23 +41,23 @@ namespace Oxide.Plugins.JTechDeployables {
 		private static Vector3 pipefightoffset = new Vector3(0.001f, 0, 0.001f); // every other pipe segment is offset by this to remove z fighting
 
 
-		public static bool CanStartPlacing(UserInfo userInfo) {
+		public new static bool CanStartPlacing(UserInfo userInfo) {
 			return true;
 		}
 
-		public static void OnStartPlacing(UserInfo userInfo) {
+		public new static void OnStartPlacing(UserInfo userInfo) {
 			userInfo.placingSelected = new List<BaseEntity>() { null, null };
 
 			userInfo.ShowMessage("Select first container");
 		}
  
-		public static void OnPlacingHammerHit(UserInfo userInfo, HitInfo hit) {
+		public new static void OnPlacingHammerHit(UserInfo userInfo, HitInfo hit) {
 
 			StorageContainer cont = hit.HitEntity.GetComponent<StorageContainer>();
 
 			if (cont != null) { // we hit a StorageContainer
 				
-				if (checkContPrivilege(cont, userInfo.player)) { // permission for this container
+				if (CheckContPrivilege(cont, userInfo.player)) { // permission for this container
 
 					if (userInfo.placingSelected[0] == null) { // if this is the first we hit
 						userInfo.placingSelected[0] = hit.HitEntity;
@@ -141,8 +141,8 @@ namespace Oxide.Plugins.JTechDeployables {
 			uint sourcechildid = uint.Parse(data.Get("sourceid"));
 			uint destchildid = uint.Parse(data.Get("destid"));
 			
-			sourcecont = getchildcont(BaseNetworkable.serverEntities.Find(sourceid), sourcechildid);
-			destcont = getchildcont(BaseNetworkable.serverEntities.Find(destid), destchildid);
+			sourcecont = GetChildContainer(BaseNetworkable.serverEntities.Find(sourceid), sourcechildid);
+			destcont = GetChildContainer(BaseNetworkable.serverEntities.Find(destid), destchildid);
 
 			if (sourcecont == null || destcont == null || sourcecont == destcont)
 				return false;
@@ -151,8 +151,8 @@ namespace Oxide.Plugins.JTechDeployables {
 
 			flowrate = flowrates[int.Parse(data.Get("grade", "0"))];
 
-			startPosition = sourcecont.CenterPoint() + containeroffset(sourcecont);
-			endPosition = destcont.CenterPoint() + containeroffset(destcont);
+			startPosition = sourcecont.CenterPoint() + ContainerOffset(sourcecont);
+			endPosition = destcont.CenterPoint() + ContainerOffset(destcont);
 
 			distance = Vector3.Distance(startPosition, endPosition);
 			Quaternion rotation = Quaternion.LookRotation(endPosition - startPosition) * Quaternion.Euler(90, 0, 0);
@@ -333,9 +333,9 @@ namespace Oxide.Plugins.JTechDeployables {
 			return null;
 		}
 
-		private static bool checkContPrivilege(StorageContainer cont, BasePlayer p) => cont.CanOpenLootPanel(p) && checkBuildingPrivilege(p);
+		private static bool CheckContPrivilege(StorageContainer cont, BasePlayer p) => cont.CanOpenLootPanel(p) && CheckBuildingPrivilege(p);
 
-		private static bool checkBuildingPrivilege(BasePlayer p) {
+		private static bool CheckBuildingPrivilege(BasePlayer p) {
 			//if (permission.UserHasPermission(p.UserIDString, "jpipes.admin"))
 			//	return true;
 			return p.CanBuild();
@@ -358,10 +358,10 @@ namespace Oxide.Plugins.JTechDeployables {
 		}
 
 		// find storage container from id and child id
-		private static StorageContainer GetContainerFromId(uint id, uint cid = 0) => getchildcont(BaseNetworkable.serverEntities.Find(id), cid);
+		private static StorageContainer GetContainerFromId(uint id, uint cid = 0) => GetChildContainer(BaseNetworkable.serverEntities.Find(id), cid);
 
 		// find storage container from parent and child id
-		private static StorageContainer getchildcont(BaseNetworkable parent, uint id = 0) {
+		private static StorageContainer GetChildContainer(BaseNetworkable parent, uint id = 0) {
 			if (id != 0) {
 				BaseResourceExtractor ext = parent?.GetComponent<BaseResourceExtractor>();
 				if (ext != null) {
@@ -399,7 +399,7 @@ namespace Oxide.Plugins.JTechDeployables {
 			return cont.net.ID;
 		}
 
-		private static Vector3 containeroffset(BaseEntity e) {
+		private static Vector3 ContainerOffset(BaseEntity e) {
 			if (e is BoxStorage)
 				return Vector3.zero;
 			else if (e is BaseOven) {
@@ -433,6 +433,27 @@ namespace Oxide.Plugins.JTechDeployables {
 			return Vector3.zero;
 		}
 		private static bool isStartable(BaseEntity e, int destchildid) => e is BaseOven || e is Recycler || destchildid == 2;
-		
+
+
+		public override Dictionary<string, string> GetMenuInfo(UserInfo userInfo) {
+			Dictionary<string, string> info = base.GetMenuInfo(userInfo);
+
+			info.Add("custom", "info");
+
+			return info;
+		}
+
+		public override List<Cui.ButtonInfo> GetMenuButtons(UserInfo userInfo) {
+			return new List<Cui.ButtonInfo>() {
+				new Cui.ButtonInfo("Auto Starter", "autostarter"),
+				new Cui.ButtonInfo("Change Direction", "changedir"),
+				new Cui.ButtonInfo("Multi Stack", "mode"),
+				new Cui.ButtonInfo("Item Filter", "filter"),
+			};
+		}
+
+		public override void MenuButtonCallback(UserInfo player, string value) {
+			
+		}
 	}
 }

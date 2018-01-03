@@ -1,15 +1,16 @@
-﻿using Oxide.Game.Rust.Cui;
+﻿using Newtonsoft.Json;
+using Oxide.Game.Rust.Cui;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace Oxide.Plugins.JTechCore {
 
 	public class JDeployable {
 
-		// TODO
-		// cui menu
+		// TODO cui menu
 
 		public class SaveData {
 
@@ -353,19 +354,106 @@ namespace Oxide.Plugins.JTechCore {
 		public void UpdateMenu() {
 			HashSet<UserInfo> p = _playerslookingatmenu;
 			foreach (var ui in p) {
-				HideMenu(ui);
-				ShowMenu(ui);
+				ui.HideMenu();
+				ui.ShowMenu(this);
 			}
 		}
 
 		public virtual Dictionary<string, string> GetMenuInfo(UserInfo userInfo) {
-			return new Dictionary<string, string>();
+			return new Dictionary<string, string>() {
+				{ "Owner", data.ownerName },
+				{ "Health", data.health.ToString() }
+			};
 		}
 
-		public virtual string GetMenuContent(CuiElementContainer elements, UserInfo userInfo) {
+		public virtual void GetMenuContent(CuiElementContainer elements, string parent, UserInfo userInfo) {
 
-			//Cui.CreatePanel
-			return string.Empty;
+			string main = elements.Add(
+				new CuiPanel {
+					Image = { Color = "0.251 0.769 1 0.25" },
+					RectTransform = { AnchorMin = "0 0", AnchorMax = "1 1" },
+				}, parent
+			);
+
+			float topheight = 0.075f;
+
+			// top drop shadow
+			elements.Add(
+				new CuiPanel {
+					Image = { Color = "0.004 0.341 0.608 0.15" },
+					RectTransform = { AnchorMin = $"0 {1 - topheight - 0.008f}", AnchorMax = $"1 1" },
+				}, main
+			);
+
+			elements.Add(
+				new CuiPanel {
+					Image = { Color = "0.004 0.341 0.608 0.15" },
+					RectTransform = { AnchorMin = $"0 {1 - topheight - 0.016f}", AnchorMax = $"1 1" },
+				}, main
+			);
+			
+			// top area
+			string top = elements.Add(
+				new CuiPanel {
+					Image = { Color = "0.251 0.769 1 0.2" },
+					RectTransform = { AnchorMin = $"0 {1 - topheight}", AnchorMax = $"0.996 0.996" },
+				}, main
+			);
+
+			elements.Add(
+				new CuiLabel {
+					Text = { Text = $"INFORMATION", FontSize = 12, Align = TextAnchor.MiddleLeft, Color = "1 1 1 0.75" },
+					RectTransform = { AnchorMin = "0.03 0", AnchorMax = "1 1" }
+				}, top
+			);
+
+
+			// Deployable Info
+
+			float separator = 0.25f;
+			float gap = 0.015f;
+			float lineheight = 0.07f;
+
+			// info area
+			string infoarea = elements.Add(
+				new CuiPanel {
+					Image = { Color = "0 0 0 0" },
+					RectTransform = { AnchorMin = "0 0", AnchorMax = $"1 {1 - topheight}" },
+				}, main
+			);
+
+			Dictionary<string, string> info = GetMenuInfo(userInfo);
+
+			for (int i = 0; i < info.Count; i++) {
+
+				elements.Add(
+					new CuiLabel {
+						Text = { Text = info.Keys.ElementAt(i), FontSize = 12, Align = TextAnchor.MiddleRight, Color = "1 1 1 0.5" },
+						RectTransform = { AnchorMin = $"0 {1 - gap - gap - (lineheight * i) - lineheight}", AnchorMax = $"{separator - gap} {1 - gap - gap - (lineheight * i)}" }
+					}, infoarea
+				);
+				elements.Add(
+					new CuiLabel {
+						Text = { Text = info.Values.ElementAt(i), FontSize = 12, Align = TextAnchor.MiddleLeft, Color = "1 1 1 0.9" },
+						RectTransform = { AnchorMin = $"{separator + gap} {1 - gap - gap - (lineheight * i) - lineheight}", AnchorMax = $"1 {1 - gap - gap - (lineheight * i)}" }
+					}, infoarea
+				);
+			}
+
+		}
+
+
+		public virtual List<Cui.ButtonInfo> GetMenuButtons(UserInfo userInfo) {
+			return new List<Cui.ButtonInfo>();
+		}
+
+		public void MenuOnOffButton(UserInfo player) {
+			data.isEnabled = !data.isEnabled;
+			UpdateMenu();
+		}
+
+		public virtual void MenuButtonCallback(UserInfo player, string value) {
+
 		}
 
 

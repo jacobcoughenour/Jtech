@@ -97,6 +97,7 @@ namespace Oxide.Plugins {
 		void RegisterDeployables() {
 			JDeployableManager.RegisterJDeployable<JTechDeployables.TransportPipe>();
 			JDeployableManager.RegisterJDeployable<JTechDeployables.Assembler>();
+			//JDeployableManager.RegisterJDeployable<JTechDeployables.SyncBox>();
 			//JDeployableManager.RegisterJDeployable<JTechDeployables.TrashCan>();
 			//JDeployableManager.RegisterJDeployable<JTechDeployables.AutoFarm>();
 		}
@@ -242,6 +243,20 @@ namespace Oxide.Plugins {
 		[ConsoleCommand("jtech.closemenu")]
 		private void closemenu(ConsoleSystem.Arg arg) {
 			UserInfo.HideMenu(arg.Player());
+		}
+
+		[ConsoleCommand("jtech.menubutton")]
+		private void menubutton(ConsoleSystem.Arg arg) {
+			if (arg.HasArgs(2)) {
+				UserInfo.HandleMenuButton(arg.Player(), arg.Args[0], arg.Args[1]);
+			}
+		}
+
+		[ConsoleCommand("jtech.menuonoffbutton")]
+		private void menuonoffbutton(ConsoleSystem.Arg arg) {
+			if (arg.HasArgs()) {
+				UserInfo.HandleMenuOnOffButton(arg.Player(), arg.Args[0]);
+			}
 		}
 
 		[ConsoleCommand("jtech.startplacing")]

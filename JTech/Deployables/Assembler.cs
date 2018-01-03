@@ -114,9 +114,17 @@ namespace Oxide.Plugins.JTechDeployables {
 			vendingMachine.UpdateMapMarker();
 			ShowMenu(player);
 		}
-
-
-
+		
 		#endregion
+
+
+		public override List<Cui.ButtonInfo> GetMenuButtons(UserInfo userInfo) {
+			return new List<Cui.ButtonInfo>() {
+			};
+		}
+
+		public override void MenuButtonCallback(UserInfo player, string value) {
+
+		}
 	}
 }

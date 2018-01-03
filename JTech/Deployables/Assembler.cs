@@ -62,7 +62,8 @@ namespace Oxide.Plugins.JTechDeployables {
 			vendingMachine.shopName = "Assembler";
 			vendingMachine.SetFlag(BaseEntity.Flags.Reserved4, false, false);
 			vendingMachine.UpdateMapMarker();
-			vendingMachine.SendNetworkUpdate(BasePlayer.NetworkQueue.Update);
+
+			SetBlueprint("gears");
 
 			SetMainParent((BaseCombatEntity) ent);
 
@@ -83,11 +84,40 @@ namespace Oxide.Plugins.JTechDeployables {
 			return true;
 		}
 
+		public void SetBlueprint(string shortname) {
+
+			vendingMachine.sellOrders.sellOrders.Clear();
+			vendingMachine.inventory.Clear();
+
+			if (shortname != string.Empty) {
+				ItemDefinition itemdef = ItemManager.FindItemDefinition(shortname);
+				if (itemdef == null)
+					return;
+				vendingMachine.sellOrders.sellOrders.Clear();
+				vendingMachine.sellOrders.sellOrders.Add(new ProtoBuf.VendingMachine.SellOrder() {
+					ShouldPool = false,
+					itemToSellID = itemdef.itemid,
+					itemToSellAmount = Mathf.Clamp(1, 1, itemdef.stackable),
+					currencyID = itemdef.itemid,
+					currencyAmountPerItem = Mathf.Clamp(1, 1, 10000),
+					itemToSellIsBP = true,
+					currencyIsBP = false,
+				});
+
+				Item item = ItemManager.CreateByName("blueprintbase", 1);
+				item.blueprintTarget = itemdef.itemid;
+				item.MoveToContainer(vendingMachine.inventory);
+			}
+			vendingMachine.RefreshSellOrderStockLevel(null);
+
+			vendingMachine.SendNetworkUpdate(BasePlayer.NetworkQueue.Update);
+		}
+
 		#region Hooks
 
 		public override bool? CanAdministerVending(VendingMachine machine, BasePlayer player) {
 			ShowMenu(player);
-			return null;
+			return false;
 		}
 
 		public override bool? CanUseVending(VendingMachine machine, BasePlayer player) {
@@ -98,7 +128,7 @@ namespace Oxide.Plugins.JTechDeployables {
 		public override bool? CanVendingAcceptItem(VendingMachine machine, Item item) {
 			// TODO
 			// accept items into input storage
-			return false;
+			return null;
 		}
 
 		public override object OnRotateVendingMachine(VendingMachine machine, BasePlayer player) {

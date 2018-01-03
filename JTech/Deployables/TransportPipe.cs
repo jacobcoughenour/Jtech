@@ -438,7 +438,7 @@ namespace Oxide.Plugins.JTechDeployables {
 		public override Dictionary<string, string> GetMenuInfo(UserInfo userInfo) {
 			Dictionary<string, string> info = base.GetMenuInfo(userInfo);
 
-			info.Add("custom", "info");
+			//info.Add("custom", "info");
 
 			return info;
 		}

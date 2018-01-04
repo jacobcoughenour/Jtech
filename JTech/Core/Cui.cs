@@ -26,10 +26,6 @@ namespace Oxide.Plugins.JTechCore {
 
 				public static string Disabled		 = "0.8 0.8 0.8 0.1";
 				public static string DisabledText	 = "1 1 1 0.2";
-				public static string DisabledOn		 = $"{Green} 0.1";
-				public static string DisabledOnText	 = "1 1 1 0.2";
-				public static string DisabledOff	 = $"{Red} 0.1";
-				public static string DisabledOffText = "1 1 1 0.2";
 			}
 		}
 
@@ -187,9 +183,9 @@ namespace Oxide.Plugins.JTechCore {
 			public string GetColor() {
 				if (Type == ButtonType.Toggle) {
 					if (ToggleValue)
-						return State == ButtonState.Enabled ? Colors.MenuButton.EnabledOn : Colors.MenuButton.DisabledOn;
+						return State == ButtonState.Enabled ? Colors.MenuButton.EnabledOn : Colors.MenuButton.Disabled;
 					else
-						return State == ButtonState.Enabled ? Colors.MenuButton.EnabledOff : Colors.MenuButton.DisabledOff;
+						return State == ButtonState.Enabled ? Colors.MenuButton.EnabledOff : Colors.MenuButton.Disabled;
 				} else {
 					return State == ButtonState.Enabled ? Colors.MenuButton.Enabled : Colors.MenuButton.Disabled;
 				}
@@ -198,9 +194,9 @@ namespace Oxide.Plugins.JTechCore {
 			public string GetTextColor() {
 				if (Type == ButtonType.Toggle) {
 					if (ToggleValue)
-						return State == ButtonState.Enabled ? Colors.MenuButton.EnabledOnText : Colors.MenuButton.DisabledOnText;
+						return State == ButtonState.Enabled ? Colors.MenuButton.EnabledOnText : Colors.MenuButton.DisabledText;
 					else
-						return State == ButtonState.Enabled ? Colors.MenuButton.EnabledOffText : Colors.MenuButton.DisabledOffText;
+						return State == ButtonState.Enabled ? Colors.MenuButton.EnabledOffText : Colors.MenuButton.DisabledText;
 				} else {
 					return State == ButtonState.Enabled ? Colors.MenuButton.EnabledText : Colors.MenuButton.DisabledText;
 				}

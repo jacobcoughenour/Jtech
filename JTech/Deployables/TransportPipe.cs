@@ -12,11 +12,10 @@ namespace Oxide.Plugins.JTechDeployables {
 
 	public class TransportPipe : JDeployable {
 		
-		//public class PipeSaveData : SaveData {
-		//	public List<int> filteritems;   // filter item ids
-		//	public bool mode;				// stack mode
-		//	public bool autostart;          // auto starter
-		//}
+		// TODO Item Filter (add container management to JDeployable)
+		// TODO Fueling Mode
+		// TODO Custom UI
+		// TODO Furnace Splitter
 
 		public static List<int> flowrates = new List<int>() { 1, 5, 10, 30, 50 };
 		public static string[] upgradeeffect = new string[] {
@@ -30,20 +29,24 @@ namespace Oxide.Plugins.JTechDeployables {
 		public enum Mode {
 			MultiStack,  // multiple stacks per item
 			SingleStack, // one stack per item
-			SingleItem,   // only one of each item
-			Count = 3
+			SingleItem,  // only one of each item
+			Fueling,
+			Count = 4
 		}
 
 		public static string[] ModeNames = new string[] {
 			"Multi Stack",
 			"Single Stack",
-			"Single Item"
+			"Single Item",
+			"Fueling"
 		};
 
 		// these are just cached values that will not be saved
 
 		public StorageContainer sourcecont;
 		public StorageContainer destcont;
+		private uint sourcechildid;
+		private uint destchildid;
 		public string sourceContainerIconUrl;
 		public string endContainerIconUrl;
 		public Vector3 startPosition;
@@ -53,7 +56,7 @@ namespace Oxide.Plugins.JTechDeployables {
 		private bool destisstartable;
 		private int flowrate;
 		private Mode mode;
-		
+
 		private static float pipesegdist = 3;
 		private static Vector3 pipefightoffset = new Vector3(0.001f, 0, 0.001f); // every other pipe segment is offset by this to remove z fighting
 
@@ -163,8 +166,8 @@ namespace Oxide.Plugins.JTechDeployables {
 
 			uint sourceid = uint.Parse(data.Get("sourceid"));
 			uint destid = uint.Parse(data.Get("destid"));
-			uint sourcechildid = uint.Parse(data.Get("sourcechildid"));
-			uint destchildid = uint.Parse(data.Get("destchildid"));
+			sourcechildid = uint.Parse(data.Get("sourcechildid"));
+			destchildid = uint.Parse(data.Get("destchildid"));
 			
 			sourcecont = GetChildContainer(BaseNetworkable.serverEntities.Find(sourceid), sourcechildid);
 			destcont = GetChildContainer(BaseNetworkable.serverEntities.Find(destid), destchildid);
@@ -173,7 +176,7 @@ namespace Oxide.Plugins.JTechDeployables {
 				return false;
 
 			isWaterPipe = sourcecont is LiquidContainer;
-			destisstartable = isStartable(destcont, destchildid);
+			destisstartable = isStartable(destcont);
 			flowrate = flowrates[int.Parse(data.Get("grade", "0"))];
 			mode = (Mode) int.Parse(data.Get("mode", "0"));
 
@@ -255,81 +258,94 @@ namespace Oxide.Plugins.JTechDeployables {
 			
 			// if container is destroyed, kill pipe
 			if (sourcecont == null || destcont == null) {
-				this.Kill(BaseNetworkable.DestroyMode.Gib);
+				Kill(BaseNetworkable.DestroyMode.Gib);
 				return false;
 			}
 			
-			if (this.data.isEnabled && sourcecont.inventory.itemList.Count > 0 && sourcecont.inventory.itemList[0] != null) {
+			if (data.isEnabled) {
 				
-				int amounttotake = Mathf.FloorToInt(timeDelta * flowrate);
+				if (sourcecont.inventory.itemList.Count > 0 && sourcecont.inventory.itemList[0] != null) {
 
-				if (amounttotake < 1)
-					return false;
+					int amounttotake = Mathf.FloorToInt(timeDelta * flowrate);
 
-				if (isWaterPipe) { // water pipe
-					
-					Item itemtomove = sourcecont.inventory.itemList[0];
+					if (amounttotake < 1)
+						return false;
 
-					if (destcont.inventory.itemList.Count == 1) {
-						Item slot = destcont.inventory.itemList[0];
+					if (isWaterPipe) { // water pipe
 
-						if (slot.CanStack(itemtomove)) {
+						Item itemtomove = sourcecont.inventory.itemList[0];
 
-							int maxstack = slot.MaxStackable();
-							if (slot.amount < maxstack) {
-								if ((maxstack - slot.amount) < amounttotake)
-									amounttotake = maxstack - slot.amount;
-								MoveItem(itemtomove, amounttotake, destcont, -1);
-							}
-						}
-					} else {
-						MoveItem(itemtomove, amounttotake, destcont, -1);
-					}
+						if (destcont.inventory.itemList.Count == 1) {
+							Item slot = destcont.inventory.itemList[0];
 
-				} else { // item pipe
+							if (slot.CanStack(itemtomove)) {
 
-					Item itemtomove = FindItem();
-
-					// move the item
-					if (itemtomove != null && CanAcceptItem(itemtomove)) {
-
-						if (mode == Mode.SingleStack) {
-
-							Item slot = destcont.inventory.FindItemsByItemID(itemtomove.info.itemid).OrderBy<Item, int>((Func<Item, int>) (x => x.amount)).FirstOrDefault<Item>();
-
-							if (slot != null) { // if there is already a stack of itemtomove in destcontainer
-								if (slot.CanStack(itemtomove)) { // can we stack this item?
-
-									int maxstack = slot.MaxStackable(); 
-									if (slot.amount < maxstack) {
-										if ((maxstack - slot.amount) < amounttotake)
-											amounttotake = maxstack - slot.amount; // amount to add to make it to max stack size
-										//pipe.moveitem(itemtomove, amounttotake, pipe.destcont, (pipe.fsplit) ? pipe.fsstacks : -1);
-										MoveItem(itemtomove, amounttotake, destcont, -1);
-										//TurnOnDest();
-									}
+								int maxstack = slot.MaxStackable();
+								if (slot.amount < maxstack) {
+									if ((maxstack - slot.amount) < amounttotake)
+										amounttotake = maxstack - slot.amount;
+									MoveItem(itemtomove, amounttotake, destcont, -1);
 								}
-							} else {
-								//pipe.moveitem(itemtomove, amounttotake, pipe.destcont, (pipe.fsplit) ? pipe.fsstacks : -1);
-								MoveItem(itemtomove, amounttotake, destcont, -1);
-								//TurnOnDest();
-							}
-						} else if (mode == Mode.SingleItem) {
-							Item slot = destcont.inventory.FindItemsByItemID(itemtomove.info.itemid).OrderBy<Item, int>((Func<Item, int>) (x => x.amount)).FirstOrDefault<Item>();
-
-							if (slot == null) {
-								//pipe.moveitem(itemtomove, amounttotake, pipe.destcont, (pipe.fsplit) ? pipe.fsstacks : -1);
-								MoveItem(itemtomove, 1, destcont, -1);
-								//TurnOnDest();
 							}
 						} else {
 							MoveItem(itemtomove, amounttotake, destcont, -1);
-							//TurnOnDest();
 						}
-					}
 
+					} else { // item pipe
+
+						Item itemtomove = FindItem();
+
+						// move the item
+						if (itemtomove != null && CanAcceptItem(itemtomove)) {
+
+							if (mode == Mode.SingleStack) {
+
+								Item slot = destcont.inventory.FindItemsByItemID(itemtomove.info.itemid).OrderBy<Item, int>((Func<Item, int>) (x => x.amount)).FirstOrDefault<Item>();
+
+								if (slot != null) { // if there is already a stack of itemtomove in destcontainer
+									if (slot.CanStack(itemtomove)) { // can we stack this item?
+
+										int maxstack = slot.MaxStackable();
+										if (slot.amount < maxstack) {
+											if ((maxstack - slot.amount) < amounttotake)
+												amounttotake = maxstack - slot.amount; // amount to add to make it to max stack size
+																					   //pipe.moveitem(itemtomove, amounttotake, pipe.destcont, (pipe.fsplit) ? pipe.fsstacks : -1);
+											MoveItem(itemtomove, amounttotake, destcont, -1);
+											TurnOnDest();
+										}
+									}
+								} else {
+									//pipe.moveitem(itemtomove, amounttotake, pipe.destcont, (pipe.fsplit) ? pipe.fsstacks : -1);
+									MoveItem(itemtomove, amounttotake, destcont, -1);
+									TurnOnDest();
+								}
+							} else if (mode == Mode.SingleItem) {
+								Item slot = destcont.inventory.FindItemsByItemID(itemtomove.info.itemid).OrderBy<Item, int>((Func<Item, int>) (x => x.amount)).FirstOrDefault<Item>();
+
+								if (slot == null) {
+									//pipe.moveitem(itemtomove, amounttotake, pipe.destcont, (pipe.fsplit) ? pipe.fsstacks : -1);
+									MoveItem(itemtomove, 1, destcont, -1);
+									TurnOnDest();
+								}
+							} else if (mode == Mode.Fueling) {
+								Item slot = destcont.inventory.FindItemsByItemID(itemtomove.info.itemid).OrderBy<Item, int>((Func<Item, int>) (x => x.amount)).FirstOrDefault<Item>();
+
+								if (slot == null) {
+									//pipe.moveitem(itemtomove, amounttotake, pipe.destcont, (pipe.fsplit) ? pipe.fsstacks : -1);
+									MoveItem(itemtomove, 1, destcont, -1);
+									TurnOnDest();
+								}
+							} else if (mode == Mode.MultiStack) {
+								MoveItem(itemtomove, amounttotake, destcont, -1);
+								TurnOnDest();
+							}
+						}
+
+					}
 				}
 
+
+				
 			}
 
 			return true;
@@ -350,16 +366,8 @@ namespace Oxide.Plugins.JTechDeployables {
 			//}
 		}
 
+		// TODO this should probably be renamed or moved inline
 		private bool CanAcceptItem(Item itemtomove) {
-			//if (pipe.dest is VendingMachine) {
-			//    bool result = pipe.destcont.inventory.CanTake(itemtomove);
-			//    pipe.debugstring = result.ToString() + (pipe.destcont.inventory.CanAcceptItem(itemtomove) == ItemContainer.CanAcceptResult.CanAccept).ToString();
-			//    //return result;
-			//}
-
-			//if ( !((BaseEntity) pipe.destcont is Recycler) || (((BaseEntity) pipe.destcont is Recycler) && (i.position > 5)))
-			//FindPosition(Item item)
-
 			return destcont.inventory.CanAcceptItem(itemtomove, -1) == ItemContainer.CanAcceptResult.CanAccept && destcont.inventory.CanTake(itemtomove);
 		}
 
@@ -483,14 +491,30 @@ namespace Oxide.Plugins.JTechDeployables {
 			}
 			return Vector3.zero;
 		}
-		private static bool isStartable(BaseEntity e, uint destchildid) => e is BaseOven || e is Recycler || destchildid == 2;
+		private bool isStartable(BaseEntity e) => e is BaseOven || e is Recycler || destchildid == 2;
+
+		private void TurnOnDest() {
+			if (!bool.Parse(data.Get("autostart", "false")) || !destisstartable)
+				return;
+
+			BaseEntity e = destcont;
+			if (e is BaseOven) {
+				e.GetComponent<BaseOven>().StartCooking();
+			} else if (e is Recycler) {
+				e.GetComponent<Recycler>().StartRecycling();
+			} else if (destchildid == 2) {
+				BaseEntity ext = (BaseEntity) BaseNetworkable.serverEntities.Find(e.parentEntity.uid);
+				if (ext != null)
+					ext.GetComponent<MiningQuarry>().EngineSwitch(true);
+			}
+		}
 
 		private void ChangeDirection() {
 			
 			uint sourceid = uint.Parse(data.Get("destid"));
 			uint destid = uint.Parse(data.Get("sourceid"));
-			uint sourcechildid = uint.Parse(data.Get("destchildid"));
-			uint destchildid = uint.Parse(data.Get("sourcechildid"));
+			sourcechildid = uint.Parse(data.Get("destchildid"));
+			destchildid = uint.Parse(data.Get("sourcechildid"));
 			
 			sourcecont = GetChildContainer(BaseNetworkable.serverEntities.Find(sourceid), sourcechildid);
 			destcont = GetChildContainer(BaseNetworkable.serverEntities.Find(destid), destchildid);
@@ -505,19 +529,31 @@ namespace Oxide.Plugins.JTechDeployables {
 			data.Set("sourcechildid", scid);
 			data.Set("destchildid", dcid);
 
-			destisstartable = isStartable(destcont, destchildid);
+			destisstartable = isStartable(destcont);
+
+			if (!destisstartable && mode == Mode.Fueling) {
+				mode = 0;
+				data.Set("mode", "0");
+			}
 
 			UpdateMenu();
 		}
 
 		private void NextMode() {
 
-			mode = (int) mode == (int) Mode.Count - 1 ? 0 : mode + 1;
+			mode = (mode == Mode.Count - 1 || // if next mode is count
+				(!destisstartable && mode == Mode.Fueling - 1)) ?  // if next mode is fueling and dest is not startable
+				0 : mode + 1;
 			data.Set("mode", (int) mode);
 
 			UpdateMenu();
 		}
 
+		private void ToggleAutoStarter() {
+			data.Set("autostart", !bool.Parse(data.Get("autostart", "false")));
+
+			UpdateMenu();
+		}
 
 		public override Dictionary<string, string> GetMenuInfo(UserInfo userInfo) {
 			Dictionary<string, string> info = base.GetMenuInfo(userInfo);
@@ -536,7 +572,7 @@ namespace Oxide.Plugins.JTechDeployables {
 				new Cui.ButtonInfo("Auto Starter", "autostarter", bool.Parse(data.Get("autostart", "false")), destisstartable ? Cui.ButtonInfo.ButtonState.Enabled : Cui.ButtonInfo.ButtonState.Disabled),
 				new Cui.ButtonInfo("Change Direction", "changedir"),
 				new Cui.ButtonInfo(ModeNames[(int) mode], "mode"),
-				new Cui.ButtonInfo("Item Filter", "filter"),
+				new Cui.ButtonInfo("Item Filter", "filter", mode == Mode.Fueling ? Cui.ButtonInfo.ButtonState.Disabled : Cui.ButtonInfo.ButtonState.Enabled),
 			};
 		}
 
@@ -546,8 +582,9 @@ namespace Oxide.Plugins.JTechDeployables {
 				ChangeDirection();
 			} else if (value == "mode") {
 				NextMode();
+			} else if (value == "autostarter") {
+				ToggleAutoStarter();
 			}
-
 		}
 	}
 }

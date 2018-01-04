@@ -10,7 +10,8 @@ namespace Oxide.Plugins.JTechCore {
 
 	public class JDeployable {
 
-		// TODO cui menu
+		// TODO storage container management
+			// save/load, hooks
 
 		public class SaveData {
 

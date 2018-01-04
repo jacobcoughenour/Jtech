@@ -186,6 +186,23 @@ namespace Oxide.Plugins.JTechCore {
 
 		public class Child : MonoBehaviour {
 			public JDeployable parent;
+			private Coroutine delayedrun;
+
+			public void RunDelayed(float delay, Action callback) {
+				if (delayedrun != null)
+					StopCoroutine(delayedrun); // cancel previous
+				delayedrun = StartCoroutine(_RunDelayed(delay, callback));
+			}
+
+			private IEnumerator _RunDelayed(float delay, Action callback) {
+				yield return new WaitForSecondsRealtime(delay);
+				try {
+					callback();
+				} catch (Exception ex) {
+					Debug.Log($"[JTechCore] JDeployable.Child.RunDelayed: {ex.InnerException.Message}");
+				}
+				delayedrun = null;
+			}
 		}
 
 		#region Child Entity Hooks

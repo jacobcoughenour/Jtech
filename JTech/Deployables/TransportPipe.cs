@@ -18,6 +18,13 @@ namespace Oxide.Plugins.JTechDeployables {
 		//}
 
 		public static List<int> flowrates = new List<int>() { 1, 5, 10, 30, 50 };
+		public static string[] upgradeeffect = new string[] {
+			"assets/bundled/prefabs/fx/build/promote_wood.prefab",
+			"assets/bundled/prefabs/fx/build/promote_wood.prefab",
+			"assets/bundled/prefabs/fx/build/promote_stone.prefab",
+			"assets/bundled/prefabs/fx/build/promote_metal.prefab",
+			"assets/bundled/prefabs/fx/build/promote_toptier.prefab",
+		};
 
 		public enum Mode {
 			SingleStack, // one stack per item
@@ -115,11 +122,18 @@ namespace Oxide.Plugins.JTechDeployables {
 
 		public override bool? OnStructureUpgrade(Child child, BasePlayer player, BuildingGrade.Enum grade) {
 
-			foreach (var seg in GetEntities()) {
-				BuildingBlock b = seg.GetComponent<BuildingBlock>();
-				b.SetGrade(grade);
-				b.SetHealthToMax();
-				b.SendNetworkUpdate(BasePlayer.NetworkQueue.UpdateDistance);
+			var ents = GetEntities();
+			for (int i = 0; i < ents.Count; i++) {
+
+				BuildingBlock b = ents[i].gameObject.GetComponent<BuildingBlock>();
+				ents[i].gameObject.GetComponent<Child>()?.RunDelayed(i * 0.25f, () => {
+					if (b == null)
+						return;
+					b.SetGrade(grade);
+					b.SetHealthToMax();
+					b.SendNetworkUpdate(BasePlayer.NetworkQueue.UpdateDistance);
+					Effect.server.Run(upgradeeffect[(int) grade], b.transform.position + (b.transform.up * 1.5f), Vector3.up);
+				});
 			}
 
 			data.Set("grade", ((int) grade).ToString());
@@ -176,6 +190,7 @@ namespace Oxide.Plugins.JTechDeployables {
 					SetMainParent((BaseCombatEntity) ent);
 				} else {
 					ent = GameManager.server.CreateEntity("assets/prefabs/building core/pillar/pillar.prefab", Vector3.up * (segspace * i) + ((i % 2 == 0) ? Vector3.zero : pipefightoffset));
+					//ent = GameManager.server.CreateEntity("assets/prefabs/building core/pillar/pillar.prefab", startPosition);
 				}
 
 				ent.enableSaving = false;
@@ -190,13 +205,22 @@ namespace Oxide.Plugins.JTechDeployables {
 					block.SetHealthToMax();
 				} else
 					return false;
-
+				
+				
 				//((DecayEntity) ent).GetNearbyBuildingBlock();
+				
+				if (i != 0) {
 
-
-				if (i != 0)
-					AddChildEntity((BaseCombatEntity) ent);
-
+					if (placing) { // placing animation
+						ent.gameObject.AddComponent<Child>()?.RunDelayed(i * 0.25f, () => {
+							AddChildEntity((BaseCombatEntity) ent);
+							Effect.server.Run("assets/bundled/prefabs/fx/build/promote_wood.prefab", ent.transform.position + (ent.transform.up * (segspace * 0.5f)), Vector3.up);
+						});
+					} else {
+						AddChildEntity((BaseCombatEntity) ent);
+					}
+				}
+				
 				// xmas lights
 
 				//BaseEntity lights = GameManager.server.CreateEntity("assets/prefabs/misc/xmas/christmas_lights/xmas.lightstring.deployed.prefab", (Vector3.up * pipesegdist * 0.5f) + (Vector3.forward * 0.13f) + (Vector3.up * (segspace * i) + ((i % 2 == 0) ? Vector3.zero : pipefightoffset)), Quaternion.Euler(0, -60, 90));

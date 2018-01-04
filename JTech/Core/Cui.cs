@@ -345,7 +345,7 @@ namespace Oxide.Plugins.JTechCore {
 				float centercontentwidth = centercontentheight * mainaspect; // keep the main content square
 
 				// slight outline around main
-				FakeDropShadow(elements, parent, 0.5f - mainwidthaspect * 0.5f, mainy - mainheight * 0.5f, 0.5f + mainwidthaspect * 0.5f, mainy + mainheight * 0.5f, 0.005f * aspect, 0.005f, 1, "0.004 0.341 0.608 0.5");
+				FakeDropShadow(elements, parent, 0.5f - mainwidthaspect * 0.5f, mainy - mainheight * 0.5f, 0.5f + mainwidthaspect * 0.5f, mainy + mainheight * 0.5f, 0.005f * aspect, 0.005f, 1, "0.004 0.341 0.608 0.3");
 
 				// close overlay if you click the background
 				elements.Add(

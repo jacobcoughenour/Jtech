@@ -68,7 +68,6 @@ namespace Oxide.Plugins.JTechDeployables {
 
 			SetMainParent((BaseCombatEntity) ent);
 
-			
 			//DroppedItemContainer container = (DroppedItemContainer) GameManager.server.CreateEntity("assets/prefabs/misc/item drop/item_drop.prefab", Vector3.zero);
 			//if (container == null)
 			//	return false;

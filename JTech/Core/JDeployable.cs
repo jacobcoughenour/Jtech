@@ -144,7 +144,12 @@ namespace Oxide.Plugins.JTechCore {
 			if (MainParent == null)
 				return;
 
-			baseCombatEntity.gameObject.AddComponent<Child>().parent = this;
+			Child c = baseCombatEntity.gameObject.GetComponent<Child>();
+			if (c != null)
+				c.parent = this;
+			else {
+				baseCombatEntity.gameObject.AddComponent<Child>().parent = this;
+			}
 
 			baseCombatEntity.SetParent(MainParent);
 			baseCombatEntity.enableSaving = false;
@@ -158,7 +163,8 @@ namespace Oxide.Plugins.JTechCore {
 		/// <param name="newhealth"></param>
 		public void SetHealth(float newhealth) {
 			data.health = newhealth;
-			MainParent.health = newhealth;
+			if (MainParent != null)
+				MainParent.health = newhealth;
 			foreach (BaseCombatEntity e in ChildEntities) {
 				e.health = newhealth;
 				e.SendNetworkUpdate(BasePlayer.NetworkQueue.UpdateDistance);

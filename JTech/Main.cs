@@ -27,7 +27,6 @@ namespace Oxide.Plugins {
 					UserInfo.Get(player);
 			});
 
-			
 		}
 
 		void OnServerInitialized() {

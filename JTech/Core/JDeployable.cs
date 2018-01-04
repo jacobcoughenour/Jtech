@@ -317,7 +317,7 @@ namespace Oxide.Plugins.JTechCore {
 		/// Spawn your deployable from this.data
 		/// </summary>
 		/// <returns></returns>
-		public virtual bool Spawn() {
+		public virtual bool Spawn(bool placing = false) {
 			// spawn from data
 			return false;
 		}

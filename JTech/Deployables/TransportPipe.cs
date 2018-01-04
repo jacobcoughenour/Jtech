@@ -106,7 +106,7 @@ namespace Oxide.Plugins.JTechDeployables {
 
 			data.Set("grade", "0");
 
-			return Spawn();
+			return Spawn(true);
 		}
 
 		public override void OnHammerHit(BasePlayer player, HitInfo hit) {
@@ -128,7 +128,7 @@ namespace Oxide.Plugins.JTechDeployables {
 			return null;
 		}
 
-		public override bool Spawn() {
+		public override bool Spawn(bool placing = false) {
 
 			//sourceContainerIconUrl;
 			//endContainerIconUrl;

@@ -38,17 +38,18 @@ namespace Oxide.Plugins.JTechDeployables {
 			
 			BaseEntity placeholder = userInfo.placingSelected[0];
 
+			SetHealth(placeholder.Health()); // set health baised on placeholder
 			data.SetTransform(placeholder.transform);
 			
 			if (!Spawn())
 				return false;
 
-			Effect.server.Run("assets/bundled/prefabs/fx/building/stone_gib.prefab", GetEntities()[0], 0U, Vector3.zero, Vector3.zero);
+			Effect.server.Run("assets/bundled/prefabs/fx/build/promote_metal.prefab", GetEntities()[0], 0U, Vector3.zero, Vector3.zero);
 
 			return true;
 		}
 
-		public override bool Spawn() {
+		public override bool Spawn(bool placing = false) {
 
 			// spawn new vending machine
 			BaseEntity ent = GameManager.server.CreateEntity("assets/prefabs/deployable/vendingmachine/vendingmachine.deployed.prefab", data.GetPosition(), data.GetRotation());

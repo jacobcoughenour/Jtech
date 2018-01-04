@@ -153,7 +153,7 @@ namespace Oxide.Plugins.JTechCore {
 						loadcount[info.Name]++;
 						totalloadcount++;
 					} else
-						Interface.Oxide.LogWarning($"[JTechCore] Failed to Load Deployable {de.Value} {de.Key}");
+						Interface.Oxide.LogWarning($"[JTechCore] Failed to Load Deployable: {de.Value} {de.Key}");
 				}
 			}
 
@@ -185,10 +185,10 @@ namespace Oxide.Plugins.JTechCore {
 			bool spawned = false;
 			if (methodInfo != null) {
 				try {
-					spawned = (bool) methodInfo.Invoke(instance, null);
+					spawned = (bool) methodInfo.Invoke(instance, new object[] { false });
 				} catch (Exception e) {
 					spawned = false;
-					Interface.Oxide.LogWarning($"[JTechCore] Failed to Spawn Deployable {e.InnerException.Message}");
+					Interface.Oxide.LogWarning($"[JTechCore] Failed to Spawn Deployable: {e.InnerException.Message}");
 				}
 			}
 			if (!spawned) {
@@ -235,7 +235,7 @@ namespace Oxide.Plugins.JTechCore {
 							totalsavecount++;
 							savecount[info.Name]++;
 						} else
-							Interface.Oxide.LogWarning($"[JTechCore] Failed to Save Deployable {de} {de.Id}");
+							Interface.Oxide.LogWarning($"[JTechCore] Failed to Save Deployable: {de} {de.Id}");
 					}
 				}
 			}
@@ -402,7 +402,7 @@ namespace Oxide.Plugins.JTechCore {
 					placed = ((bool) methodInfo.Invoke(instance, new object[] { userInfo }));
 				} catch (Exception e) {
 					placed = false;
-					Interface.Oxide.LogWarning($"[JTechCore] Failed to Place Deployable {e.InnerException.Message}");
+					Interface.Oxide.LogWarning($"[JTechCore] Failed to Place Deployable: {e.InnerException.Message}");
 					userInfo.ShowErrorMessage("Failed to Place Deployable", e.InnerException.Message);
 				}
 			}

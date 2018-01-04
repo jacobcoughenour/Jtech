@@ -2,6 +2,7 @@
 using UnityEngine;
 using Oxide.Plugins.JTechCore;
 using System;
+using System.Linq;
 
 namespace Oxide.Plugins.JTechDeployables {
 
@@ -27,13 +28,20 @@ namespace Oxide.Plugins.JTechDeployables {
 		};
 
 		public enum Mode {
-			SingleStack, // one stack per item
 			MultiStack,  // multiple stacks per item
-			SingleItem   // only one of each item
+			SingleStack, // one stack per item
+			SingleItem,   // only one of each item
+			Count = 3
 		}
 
+		public static string[] ModeNames = new string[] {
+			"Multi Stack",
+			"Single Stack",
+			"Single Item"
+		};
+
 		// these are just cached values that will not be saved
-		
+
 		public StorageContainer sourcecont;
 		public StorageContainer destcont;
 		public string sourceContainerIconUrl;
@@ -44,6 +52,7 @@ namespace Oxide.Plugins.JTechDeployables {
 		public bool isWaterPipe;
 		private bool destisstartable;
 		private int flowrate;
+		private Mode mode;
 		
 		private static float pipesegdist = 3;
 		private static Vector3 pipefightoffset = new Vector3(0.001f, 0, 0.001f); // every other pipe segment is offset by this to remove z fighting
@@ -113,6 +122,7 @@ namespace Oxide.Plugins.JTechDeployables {
 			data.Set("destchildid", dcid);
 
 			data.Set("grade", "0");
+			data.Set("mode", "0");
 
 			return Spawn(true);
 		}
@@ -165,6 +175,7 @@ namespace Oxide.Plugins.JTechDeployables {
 			isWaterPipe = sourcecont is LiquidContainer;
 			destisstartable = isStartable(destcont, destchildid);
 			flowrate = flowrates[int.Parse(data.Get("grade", "0"))];
+			mode = (Mode) int.Parse(data.Get("mode", "0"));
 
 			startPosition = sourcecont.CenterPoint() + ContainerOffset(sourcecont);
 			endPosition = destcont.CenterPoint() + ContainerOffset(destcont);
@@ -281,30 +292,40 @@ namespace Oxide.Plugins.JTechDeployables {
 
 					// move the item
 					if (itemtomove != null && CanAcceptItem(itemtomove)) {
-						
-						//if (singlestack) {
 
-						//	Item slot = destcont.inventory.FindItemsByItemID(itemtomove.info.itemid).OrderBy<Item, int>((Func<Item, int>) (x => x.amount)).FirstOrDefault<Item>();
+						if (mode == Mode.SingleStack) {
 
-						//	if (slot != null) {
-						//		if (slot.CanStack(itemtomove)) {
+							Item slot = destcont.inventory.FindItemsByItemID(itemtomove.info.itemid).OrderBy<Item, int>((Func<Item, int>) (x => x.amount)).FirstOrDefault<Item>();
 
-						//			int maxstack = slot.MaxStackable();
-						//			if (slot.amount < maxstack) {
-						//				if ((maxstack - slot.amount) < amounttotake)
-						//					amounttotake = maxstack - slot.amount;
-						//				pipe.moveitem(itemtomove, amounttotake, pipe.destcont, (pipe.fsplit) ? pipe.fsstacks : -1);
-						//				TurnOnDest();
-						//			}
-						//		}
-						//	} else {
-						//		pipe.moveitem(itemtomove, amounttotake, pipe.destcont, (pipe.fsplit) ? pipe.fsstacks : -1);
-						//		TurnOnDest();
-						//	}
-						//} else {
+							if (slot != null) { // if there is already a stack of itemtomove in destcontainer
+								if (slot.CanStack(itemtomove)) { // can we stack this item?
+
+									int maxstack = slot.MaxStackable(); 
+									if (slot.amount < maxstack) {
+										if ((maxstack - slot.amount) < amounttotake)
+											amounttotake = maxstack - slot.amount; // amount to add to make it to max stack size
+										//pipe.moveitem(itemtomove, amounttotake, pipe.destcont, (pipe.fsplit) ? pipe.fsstacks : -1);
+										MoveItem(itemtomove, amounttotake, destcont, -1);
+										//TurnOnDest();
+									}
+								}
+							} else {
+								//pipe.moveitem(itemtomove, amounttotake, pipe.destcont, (pipe.fsplit) ? pipe.fsstacks : -1);
+								MoveItem(itemtomove, amounttotake, destcont, -1);
+								//TurnOnDest();
+							}
+						} else if (mode == Mode.SingleItem) {
+							Item slot = destcont.inventory.FindItemsByItemID(itemtomove.info.itemid).OrderBy<Item, int>((Func<Item, int>) (x => x.amount)).FirstOrDefault<Item>();
+
+							if (slot == null) {
+								//pipe.moveitem(itemtomove, amounttotake, pipe.destcont, (pipe.fsplit) ? pipe.fsstacks : -1);
+								MoveItem(itemtomove, 1, destcont, -1);
+								//TurnOnDest();
+							}
+						} else {
 							MoveItem(itemtomove, amounttotake, destcont, -1);
 							//TurnOnDest();
-						//}
+						}
 					}
 
 				}
@@ -489,23 +510,32 @@ namespace Oxide.Plugins.JTechDeployables {
 			UpdateMenu();
 		}
 
+		private void NextMode() {
+
+			mode = (int) mode == (int) Mode.Count - 1 ? 0 : mode + 1;
+			data.Set("mode", (int) mode);
+
+			UpdateMenu();
+		}
+
 
 		public override Dictionary<string, string> GetMenuInfo(UserInfo userInfo) {
 			Dictionary<string, string> info = base.GetMenuInfo(userInfo);
 
-			//info.Add("custom", "info");
-
+			info.Add("Flowrate", isWaterPipe ? $"{flowrate}ml/sec" : $"{flowrate}/sec");
+			info.Add("Length", Math.Round(distance, 2).ToString());
+			
 			return info;
 		}
 
 		public override List<Cui.ButtonInfo> GetMenuButtons(UserInfo userInfo) {
 			return data.Get("grade") == "0" ? new List<Cui.ButtonInfo>() { // if twig
 				new Cui.ButtonInfo("Change Direction", "changedir"),
-				new Cui.ButtonInfo("Multi Stack", "mode"),
+				new Cui.ButtonInfo(ModeNames[(int) mode], "mode"),
 			} : new List<Cui.ButtonInfo>() { // not twig
 				new Cui.ButtonInfo("Auto Starter", "autostarter", bool.Parse(data.Get("autostart", "false")), destisstartable ? Cui.ButtonInfo.ButtonState.Enabled : Cui.ButtonInfo.ButtonState.Disabled),
 				new Cui.ButtonInfo("Change Direction", "changedir"),
-				new Cui.ButtonInfo("Multi Stack", "mode"),
+				new Cui.ButtonInfo(ModeNames[(int) mode], "mode"),
 				new Cui.ButtonInfo("Item Filter", "filter"),
 			};
 		}
@@ -514,6 +544,8 @@ namespace Oxide.Plugins.JTechDeployables {
 
 			if (value == "changedir") {
 				ChangeDirection();
+			} else if (value == "mode") {
+				NextMode();
 			}
 
 		}

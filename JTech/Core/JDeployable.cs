@@ -479,7 +479,6 @@ namespace Oxide.Plugins.JTechCore {
 
 		}
 
-
 		#endregion
 
 	}

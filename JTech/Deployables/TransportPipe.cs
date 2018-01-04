@@ -153,8 +153,8 @@ namespace Oxide.Plugins.JTechDeployables {
 
 			uint sourceid = uint.Parse(data.Get("sourceid"));
 			uint destid = uint.Parse(data.Get("destid"));
-			uint sourcechildid = uint.Parse(data.Get("sourceid"));
-			uint destchildid = uint.Parse(data.Get("destid"));
+			uint sourcechildid = uint.Parse(data.Get("sourcechildid"));
+			uint destchildid = uint.Parse(data.Get("destchildid"));
 			
 			sourcecont = GetChildContainer(BaseNetworkable.serverEntities.Find(sourceid), sourcechildid);
 			destcont = GetChildContainer(BaseNetworkable.serverEntities.Find(destid), destchildid);
@@ -464,6 +464,31 @@ namespace Oxide.Plugins.JTechDeployables {
 		}
 		private static bool isStartable(BaseEntity e, uint destchildid) => e is BaseOven || e is Recycler || destchildid == 2;
 
+		private void ChangeDirection() {
+			
+			uint sourceid = uint.Parse(data.Get("destid"));
+			uint destid = uint.Parse(data.Get("sourceid"));
+			uint sourcechildid = uint.Parse(data.Get("destchildid"));
+			uint destchildid = uint.Parse(data.Get("sourcechildid"));
+			
+			sourcecont = GetChildContainer(BaseNetworkable.serverEntities.Find(sourceid), sourcechildid);
+			destcont = GetChildContainer(BaseNetworkable.serverEntities.Find(destid), destchildid);
+
+			if (sourcecont == null || destcont == null)
+				return;
+
+			uint scid;
+			uint dcid;
+			data.Set("sourceid", GetIdFromContainer(sourcecont, out scid));
+			data.Set("destid", GetIdFromContainer(destcont, out dcid));
+			data.Set("sourcechildid", scid);
+			data.Set("destchildid", dcid);
+
+			destisstartable = isStartable(destcont, destchildid);
+
+			UpdateMenu();
+		}
+
 
 		public override Dictionary<string, string> GetMenuInfo(UserInfo userInfo) {
 			Dictionary<string, string> info = base.GetMenuInfo(userInfo);
@@ -486,7 +511,11 @@ namespace Oxide.Plugins.JTechDeployables {
 		}
 
 		public override void MenuButtonCallback(UserInfo player, string value) {
-			
+
+			if (value == "changedir") {
+				ChangeDirection();
+			}
+
 		}
 	}
 }

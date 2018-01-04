@@ -115,12 +115,12 @@ namespace Oxide.Plugins.JTechCore {
 			}
 		}
 
-		public int Id;
-		public SaveData data;
-		private bool isBeingDestroyed = false;
+		public int Id;							// unique ID
+		public SaveData data;					// current save data
+		private bool isBeingDestroyed = false;	// if Kill() has already been called
 
-		private BaseCombatEntity MainParent;
-		private List<BaseCombatEntity> ChildEntities = new List<BaseCombatEntity>();
+		private BaseCombatEntity MainParent; // main parent entity that everything is parented to
+		private List<BaseCombatEntity> ChildEntities = new List<BaseCombatEntity>(); // child entities attached to the parent entity
 
 		public void SetMainParent(BaseCombatEntity baseCombatEntity) {
 			baseCombatEntity.gameObject.AddComponent<Child>().parent = this;
@@ -129,6 +129,10 @@ namespace Oxide.Plugins.JTechCore {
 			MainParent.enableSaving = false;
 		}
 
+		/// <summary>
+		/// Gets MainParent and all ChildEntities of this JDeployable
+		/// </summary>
+		/// <returns></returns>
 		public List<BaseCombatEntity> GetEntities() {
 			var ents = new List<BaseCombatEntity>();
 			ents.Add(MainParent);
@@ -158,8 +162,8 @@ namespace Oxide.Plugins.JTechCore {
 		}
 
 		/// <summary>
-		/// Use this to change the health of your deployable.
-		/// This will set the health of all child entities.
+		/// Use this to change the health.
+		/// Updates health of all child entities and saves the new value to save data.
 		/// </summary>
 		/// <param name="newhealth"></param>
 		public void SetHealth(float newhealth) {
@@ -172,6 +176,11 @@ namespace Oxide.Plugins.JTechCore {
 			}
 		}
 
+		/// <summary>
+		/// Kills JDeployable.
+		/// </summary>
+		/// <param name="mode"></param>
+		/// <param name="remove">Remove JDeployable instance from JDeployableManager so it isn't saved</param>
 		public void Kill(BaseNetworkable.DestroyMode mode = BaseNetworkable.DestroyMode.None, bool remove = true) {
 			if (isBeingDestroyed)
 				return;
@@ -185,10 +194,20 @@ namespace Oxide.Plugins.JTechCore {
 				JDeployableManager.RemoveJDeployable(this.Id);
 		}
 
+		/// <summary>
+		/// Attached to every BaseCombatEntity of the JDeployable.
+		/// Useful for determining if an entity is part of a JDeployable and forwarding hooks to Child.parent.
+		/// </summary>
 		public class Child : MonoBehaviour {
 			public JDeployable parent;
 			private Coroutine delayedrun;
 
+			/// <summary>
+			/// Runs callback after a delay using a MonoBehaviour Coroutine.
+			/// This can be used for basic animations and effects.
+			/// </summary>
+			/// <param name="delay">delay in seconds</param>
+			/// <param name="callback"></param>
 			public void RunDelayed(float delay, Action callback) {
 				if (delayedrun != null)
 					StopCoroutine(delayedrun); // cancel previous
@@ -241,22 +260,37 @@ namespace Oxide.Plugins.JTechCore {
 			return null;
 		}
 
+		/// <summary>
+		/// CanAdministerVending hook for child entities
+		/// </summary>
 		public virtual bool? CanAdministerVending(VendingMachine machine, BasePlayer player) {
 			return null;
 		}
 
+		/// <summary>
+		/// CanUseVending hook for child entities
+		/// </summary>
 		public virtual bool? CanUseVending(VendingMachine machine, BasePlayer player) {
 			return null;
 		}
 
+		/// <summary>
+		/// CanVendingAcceptItem hook for child entities
+		/// </summary>
 		public virtual bool? CanVendingAcceptItem(VendingMachine machine, Item item) {
 			return null;
 		}
 
+		/// <summary>
+		/// OnRotateVendingMachine hook for child entities
+		/// </summary>
 		public virtual object OnRotateVendingMachine(VendingMachine machine, BasePlayer player) {
 			return null;
 		}
 
+		/// <summary>
+		/// OnToggleVendingBroadcast hook for child entities
+		/// </summary>
 		public virtual void OnToggleVendingBroadcast(VendingMachine machine, BasePlayer player) {
 		}
 
@@ -353,28 +387,47 @@ namespace Oxide.Plugins.JTechCore {
 
 		#region CUI
 
+		// players that are currently looking at this JDeployable's menu
 		private HashSet<UserInfo> _playerslookingatmenu = new HashSet<UserInfo>();
 
+		/// <summary>
+		/// Show JDeployable Menu for player
+		/// </summary>
 		public void ShowMenu(BasePlayer player) => ShowMenu(UserInfo.Get(player));
 
+		/// <summary>
+		/// Show JDeployable Menu for UserInfo
+		/// </summary>
 		public void ShowMenu(UserInfo userInfo) {
 			userInfo.ShowMenu(this);
 			_playerslookingatmenu.Add(userInfo);
 		}
 
+		/// <summary>
+		/// Hide JDeployable Menu for player
+		/// </summary>
 		public void HideMenu(BasePlayer player) => HideMenu(UserInfo.Get(player));
 
+		/// <summary>
+		/// Hide JDeployable Menu for UserInfo
+		/// </summary>
 		public void HideMenu(UserInfo userInfo) {
 			userInfo.HideMenu();
 			_playerslookingatmenu.Remove(userInfo);
 		}
 
+		/// <summary>
+		/// Hide JDeployable Menu for all players looking at it
+		/// </summary>
 		public void HideMenuAll() {
 			HashSet<UserInfo> p = _playerslookingatmenu;
 			foreach (var ui in p)
 				HideMenu(ui);
 		}
 
+		/// <summary>
+		/// Update JDeployable Menu for all players looking at it.
+		/// </summary>
 		public void UpdateMenu() {
 			HashSet<UserInfo> p = _playerslookingatmenu;
 			foreach (var ui in p) {
@@ -383,6 +436,9 @@ namespace Oxide.Plugins.JTechCore {
 			}
 		}
 
+		/// <summary>
+		/// Gets the labels and values shown in the JDeployable Menu Info section
+		/// </summary>
 		public virtual Dictionary<string, string> GetMenuInfo(UserInfo userInfo) {
 			return new Dictionary<string, string>() {
 				{ "Owner", data.ownerName },
@@ -390,6 +446,12 @@ namespace Oxide.Plugins.JTechCore {
 			};
 		}
 
+		/// <summary>
+		/// Gets the content area of the JDeployable Menu.
+		/// By default, it creates an list of GetMenuInfo.
+		/// Override it to create your own menu content.
+		/// Also, parent is always at a 1:1 aspect ratio to help with sizing.
+		/// </summary>
 		public virtual void GetMenuContent(CuiElementContainer elements, string parent, UserInfo userInfo) {
 
 			string main = elements.Add(
@@ -466,16 +528,26 @@ namespace Oxide.Plugins.JTechCore {
 
 		}
 
-
+		/// <summary>
+		/// Gets the buttons to display on the right side of the Menu.
+		/// </summary>
 		public virtual List<Cui.ButtonInfo> GetMenuButtons(UserInfo userInfo) {
 			return new List<Cui.ButtonInfo>();
 		}
-
+		
+		/// <summary>
+		/// Handler for the On/Off button in the JDeployable Menu.
+		/// </summary>
 		public void MenuOnOffButton(UserInfo player) {
 			data.isEnabled = !data.isEnabled;
 			UpdateMenu();
 		}
 
+		/// <summary>
+		/// Callback for buttons in the JDeployable Menu.
+		/// </summary>
+		/// <param name="player"></param>
+		/// <param name="value">The value from Cui.ButtonInfo</param>
 		public virtual void MenuButtonCallback(UserInfo player, string value) {
 
 		}

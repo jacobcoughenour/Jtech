@@ -165,6 +165,12 @@ namespace Oxide.Plugins.JTechCore {
 				Enum    // enum
 			}
 
+			/// <summary>
+			/// JDeployable Menu Button Info
+			/// </summary>
+			/// <param name="label">Label shown on the button</param>
+			/// <param name="value">Value sent MenuButtonCallback</param>
+			/// <param name="state"></param>
 			public ButtonInfo(string label, string value, ButtonState state = ButtonState.Enabled) {
 				Label = label;
 				Value = value;
@@ -172,6 +178,12 @@ namespace Oxide.Plugins.JTechCore {
 				Type = ButtonType.Action;
 			}
 
+			/// <summary>
+			/// JDeployable Menu Button Info
+			/// </summary>
+			/// <param name="label">Label shown on the button</param>
+			/// <param name="value">Value sent MenuButtonCallback</param>
+			/// <param name="OnOff">Show as On or Off</param>
 			public ButtonInfo(string label, string value, bool OnOff, ButtonState state = ButtonState.Enabled) {
 				Label = label;
 				Value = value;
@@ -180,6 +192,9 @@ namespace Oxide.Plugins.JTechCore {
 				Type = ButtonType.Toggle;
 			}
 
+			/// <summary>
+			/// Get button color
+			/// </summary>
 			public string GetColor() {
 				if (Type == ButtonType.Toggle) {
 					if (ToggleValue)
@@ -191,6 +206,9 @@ namespace Oxide.Plugins.JTechCore {
 				}
 			}
 
+			/// <summary>
+			/// Get text color
+			/// </summary>
 			public string GetTextColor() {
 				if (Type == ButtonType.Toggle) {
 					if (ToggleValue)
@@ -510,8 +528,8 @@ namespace Oxide.Plugins.JTechCore {
 					CreateMenuButton(
 						$"jtech.menuonoffbutton {deployable.Id}", deployable.data.isEnabled ? "Turn Off" : "Turn On",
 						$"0 0", $"1 {buttonheight - buttonspacing}", 15,
-						deployable.data.isEnabled ? Colors.MenuButton.EnabledOn : Colors.MenuButton.EnabledOff, 
-						deployable.data.isEnabled ? Colors.MenuButton.EnabledOnText : Colors.MenuButton.EnabledOffText
+						deployable.data.isEnabled ? Colors.MenuButton.EnabledOff : Colors.MenuButton.EnabledOn, 
+						deployable.data.isEnabled ? Colors.MenuButton.EnabledOffText : Colors.MenuButton.EnabledOnText
 					),
 					buttonsinside
 				);

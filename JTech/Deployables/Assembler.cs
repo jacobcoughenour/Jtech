@@ -13,11 +13,11 @@ namespace Oxide.Plugins.JTechDeployables {
 
 		VendingMachine vendingMachine;
 
-		public static void OnStartPlacing(UserInfo userInfo) {
+		public new static void OnStartPlacing(UserInfo userInfo) {
 			userInfo.ShowMessage("Placing Assembler");
 		}
 
-		public static Item GetPlaceholderItem(UserInfo userInfo) {
+		public new static Item GetPlaceholderItem(UserInfo userInfo) {
 			// vending machine with assembler skin
 			return ItemManager.CreateByName("vending.machine", 1, 1224412227);
 		}

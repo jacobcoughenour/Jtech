@@ -42,6 +42,7 @@ namespace Oxide.Plugins.JTechDeployables {
 		public Vector3 endPosition;
 		private float distance;
 		public bool isWaterPipe;
+		private bool destisstartable;
 		private int flowrate;
 		
 		private static float pipesegdist = 3;
@@ -162,7 +163,7 @@ namespace Oxide.Plugins.JTechDeployables {
 				return false;
 
 			isWaterPipe = sourcecont is LiquidContainer;
-
+			destisstartable = isStartable(destcont, destchildid);
 			flowrate = flowrates[int.Parse(data.Get("grade", "0"))];
 
 			startPosition = sourcecont.CenterPoint() + ContainerOffset(sourcecont);
@@ -231,7 +232,10 @@ namespace Oxide.Plugins.JTechDeployables {
 
 			}
 
-			SetHealth(data.health);
+			if (placing) {
+				SetHealth(GetEntities()[0].MaxHealth());
+			} else
+				SetHealth(data.health);
 
 			return true;
 		}
@@ -458,7 +462,7 @@ namespace Oxide.Plugins.JTechDeployables {
 			}
 			return Vector3.zero;
 		}
-		private static bool isStartable(BaseEntity e, int destchildid) => e is BaseOven || e is Recycler || destchildid == 2;
+		private static bool isStartable(BaseEntity e, uint destchildid) => e is BaseOven || e is Recycler || destchildid == 2;
 
 
 		public override Dictionary<string, string> GetMenuInfo(UserInfo userInfo) {
@@ -470,8 +474,11 @@ namespace Oxide.Plugins.JTechDeployables {
 		}
 
 		public override List<Cui.ButtonInfo> GetMenuButtons(UserInfo userInfo) {
-			return new List<Cui.ButtonInfo>() {
-				new Cui.ButtonInfo("Auto Starter", "autostarter"),
+			return data.Get("grade") == "0" ? new List<Cui.ButtonInfo>() { // if twig
+				new Cui.ButtonInfo("Change Direction", "changedir"),
+				new Cui.ButtonInfo("Multi Stack", "mode"),
+			} : new List<Cui.ButtonInfo>() { // not twig
+				new Cui.ButtonInfo("Auto Starter", "autostarter", bool.Parse(data.Get("autostart", "false")), destisstartable ? Cui.ButtonInfo.ButtonState.Enabled : Cui.ButtonInfo.ButtonState.Disabled),
 				new Cui.ButtonInfo("Change Direction", "changedir"),
 				new Cui.ButtonInfo("Multi Stack", "mode"),
 				new Cui.ButtonInfo("Item Filter", "filter"),

@@ -1,8 +1,10 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
 using Oxide.Plugins.JTechCore;
+using Oxide.Plugins.JTechCore.Util;
 using System;
 using System.Linq;
+using Oxide.Game.Rust.Cui;
 
 namespace Oxide.Plugins.JTechDeployables {
 
@@ -14,8 +16,7 @@ namespace Oxide.Plugins.JTechDeployables {
 		
 		// TODO Item Filter (add container management to JDeployable)
 		// TODO Fueling Mode
-		// TODO Custom UI
-		// TODO Furnace Splitter
+		// TODO Furnace Splitter and cui
 
 		public static List<int> flowrates = new List<int>() { 1, 5, 10, 30, 50 };
 		public static string[] upgradeeffect = new string[] {
@@ -48,7 +49,7 @@ namespace Oxide.Plugins.JTechDeployables {
 		private uint sourcechildid;
 		private uint destchildid;
 		public string sourceContainerIconUrl;
-		public string endContainerIconUrl;
+		public string destContainerIconUrl;
 		public Vector3 startPosition;
 		public Vector3 endPosition;
 		private float distance;
@@ -157,10 +158,7 @@ namespace Oxide.Plugins.JTechDeployables {
 		}
 
 		public override bool Spawn(bool placing = false) {
-
-			//sourceContainerIconUrl;
-			//endContainerIconUrl;
-
+			
 			if (!(data.Has("sourceid", "destid", "sourcechildid", "destchildid")))
 				return false;
 
@@ -174,6 +172,9 @@ namespace Oxide.Plugins.JTechDeployables {
 
 			if (sourcecont == null || destcont == null || sourcecont == destcont)
 				return false;
+
+			sourceContainerIconUrl = Icons.GetContainerIconURL(sourcecont, 100);
+			destContainerIconUrl = Icons.GetContainerIconURL(destcont, 100);
 
 			isWaterPipe = sourcecont is LiquidContainer;
 			destisstartable = isStartable(destcont);
@@ -378,10 +379,10 @@ namespace Oxide.Plugins.JTechDeployables {
 					if (!(sourcecont is Recycler) || (sourcecont is Recycler && i.position > 5)) { // if source is recycler then only take items from the output
 
 						if (destcont is BaseOven) { // only send Burnable or Cookable to BaseOven
-							if ((bool) ((UnityEngine.Object) i.info.GetComponent<ItemModBurnable>()) || (bool) ((UnityEngine.Object) i.info.GetComponent<ItemModCookable>()))
+							if ((i.info.GetComponent<ItemModBurnable>()) || (i.info.GetComponent<ItemModCookable>()))
 								return i;
 						} else if (destcont is Recycler) { // only send recyclables to recycler
-							if ((UnityEngine.Object) i.info.Blueprint != (UnityEngine.Object) null)
+							if (i.info.Blueprint != null)
 								return i;
 						} else {
 							return i;
@@ -493,6 +494,8 @@ namespace Oxide.Plugins.JTechDeployables {
 		}
 		private bool isStartable(BaseEntity e) => e is BaseOven || e is Recycler || destchildid == 2;
 
+		
+
 		private void TurnOnDest() {
 			if (!bool.Parse(data.Get("autostart", "false")) || !destisstartable)
 				return;
@@ -521,6 +524,9 @@ namespace Oxide.Plugins.JTechDeployables {
 
 			if (sourcecont == null || destcont == null)
 				return;
+
+			sourceContainerIconUrl = Icons.GetContainerIconURL(sourcecont, 100);
+			destContainerIconUrl = Icons.GetContainerIconURL(destcont, 100);
 
 			uint scid;
 			uint dcid;
@@ -555,10 +561,140 @@ namespace Oxide.Plugins.JTechDeployables {
 			UpdateMenu();
 		}
 
+		#region CUI
+		
+		public override void GetMenuContent(CuiElementContainer elements, string parent, UserInfo userInfo) {
+
+			//TODO show if dest is running
+
+			// main/parent is always at a 1:1 aspect ratio to make sizing easier
+			string main = elements.Add(
+				new CuiPanel {
+					Image = { Color = "0 0 0 0" },
+					RectTransform = { AnchorMin = "0 0", AnchorMax = "1 1" },
+				}, parent
+			);
+
+			float pipey = 0.8f;
+			float pipewidth = 0.275f;
+			float pipeheight = 0.0275f;
+			float arrowoffset = 0.005f;
+			float conticonsize = 0.125f;
+
+			// slight outline around the flowpipe
+			Cui.FakeDropShadow(elements, main, 0.5f - pipewidth, pipey - pipeheight, 0.5f + pipewidth, pipey + pipeheight, 0f, 0.01f, 1, $"{Cui.Colors.Blue} 0.1");
+
+			string flowpipe = elements.Add(
+				new CuiPanel {
+					Image = { Color = $"{Cui.Colors.Blue} 0.5" },
+					RectTransform = { AnchorMin = $"{0.5f - pipewidth} {pipey - pipeheight}", AnchorMax = $"{0.5f + pipewidth} {pipey + pipeheight}" },
+				}, main
+			);
+
+			elements.Add(
+				Cui.AddOutline(
+				new CuiLabel {
+					Text = { Text = new String('>', int.Parse(data.Get("grade", "0")) + 1), FontSize = 20, Align = TextAnchor.MiddleCenter, Color = "1 1 1 1" },
+					RectTransform = { AnchorMin = $"{0.5f - pipewidth} {pipey - pipeheight * 2 + arrowoffset}", AnchorMax = $"{0.5f + pipewidth} {pipey + pipeheight * 2 + arrowoffset}" }
+				}, main, $"{Cui.Colors.DarkBlue} 0.8")
+			);
+
+			elements.Add(
+				Cui.CreateIcon(main, $"{0.5f - pipewidth - conticonsize} {pipey - conticonsize}", $"{0.5f - pipewidth + conticonsize} {pipey + conticonsize}", sourceContainerIconUrl)
+			);
+			elements.Add(
+				Cui.CreateIcon(main, $"{0.5f + pipewidth - conticonsize} {pipey - conticonsize}", $"{0.5f + pipewidth + conticonsize} {pipey + conticonsize}", destContainerIconUrl)
+			);
+			
+			float separator = 0.25f;
+			float separatorright = 0.75f;
+			float gap = 0.015f;
+			float lineheight = 0.07f;
+
+			Dictionary<string, string> info = GetMenuInfo(userInfo);
+
+			float topheight = 0.075f;
+			//float infoy = (info.Count * lineheight) * 0.5f + 0.03f + topheight;
+			float infoyoffset = 0.33f;
+			float infoy = (info.Count * lineheight) * 0.5f + 0.03f + topheight + infoyoffset;
+
+			string infobg = elements.Add(
+				new CuiPanel {
+					Image = { Color = "0.251 0.769 1 0.25" },
+					RectTransform = { AnchorMin = $"0 {infoyoffset}", AnchorMax = $"0.996 {infoy}" },
+				}, main
+			);
+
+			// info top drop shadow
+			elements.Add(
+				new CuiPanel {
+					Image = { Color = "0.004 0.341 0.608 0.15" },
+					RectTransform = { AnchorMin = $"0 {infoy - topheight - 0.008f}", AnchorMax = $"0.996 {infoy}" },
+				}, main
+			);
+
+			elements.Add(
+				new CuiPanel {
+					Image = { Color = "0.004 0.341 0.608 0.15" },
+					RectTransform = { AnchorMin = $"0 {infoy - topheight - 0.016f}", AnchorMax = $"0.996 {infoy}" },
+				}, main
+			);
+
+			// info top area
+			string infotop = elements.Add(
+				new CuiPanel {
+					Image = { Color = "0.251 0.769 1 0.2" },
+					RectTransform = { AnchorMin = $"0 {infoy - topheight}", AnchorMax = $"0.996 {infoy}" },
+				}, main
+			);
+
+			elements.Add(
+				new CuiLabel {
+					Text = { Text = $"INFORMATION", FontSize = 12, Align = TextAnchor.MiddleLeft, Color = "1 1 1 0.75" },
+					RectTransform = { AnchorMin = "0.03 0", AnchorMax = "1 1" }
+				}, infotop
+			);
+
+
+			// Deployable Info
+			// left
+			for (int i = 0; i < info.Count; i+=2) {
+
+				elements.Add(
+					new CuiLabel {
+						Text = { Text = info.Keys.ElementAt(i), FontSize = 12, Align = TextAnchor.MiddleRight, Color = "1 1 1 0.5" },
+						RectTransform = { AnchorMin = $"0 {infoy - topheight - gap - ((lineheight * 0.5f) * i) - lineheight}", AnchorMax = $"{separator - gap} {infoy - topheight - gap - ((lineheight * 0.5f) * i)}" }
+					}, main
+				);
+				elements.Add(
+					new CuiLabel {
+						Text = { Text = info.Values.ElementAt(i), FontSize = 12, Align = TextAnchor.MiddleLeft, Color = "1 1 1 0.9" },
+						RectTransform = { AnchorMin = $"{separator + gap} {infoy - topheight - gap - ((lineheight * 0.5f) * i) - lineheight}", AnchorMax = $"1 {infoy - topheight - gap - ((lineheight * 0.5f) * i)}" }
+					}, main
+				);
+			}
+			// right
+			for (int i = 1; i < info.Count; i+=2) {
+
+				elements.Add(
+					new CuiLabel {
+						Text = { Text = info.Keys.ElementAt(i), FontSize = 12, Align = TextAnchor.MiddleRight, Color = "1 1 1 0.5" },
+						RectTransform = { AnchorMin = $"0 {infoy - topheight - gap - ((lineheight * 0.5f) * (i - 1)) - lineheight}", AnchorMax = $"{separatorright - gap} {infoy - topheight - gap - ((lineheight * 0.5f) * (i - 1))}" }
+					}, main
+				);
+				elements.Add(
+					new CuiLabel {
+						Text = { Text = info.Values.ElementAt(i), FontSize = 12, Align = TextAnchor.MiddleLeft, Color = "1 1 1 0.9" },
+						RectTransform = { AnchorMin = $"{separatorright + gap} {infoy - topheight - gap - ((lineheight * 0.5f) * (i - 1)) - lineheight}", AnchorMax = $"1 {infoy - topheight - gap - ((lineheight * 0.5f) * (i - 1))}" }
+					}, main
+				);
+			}
+		}
+
 		public override Dictionary<string, string> GetMenuInfo(UserInfo userInfo) {
 			Dictionary<string, string> info = base.GetMenuInfo(userInfo);
 
-			info.Add("Flowrate", isWaterPipe ? $"{flowrate}ml/sec" : $"{flowrate}/sec");
+			info.Add("Flowrate", isWaterPipe ? $"{flowrate} ml/sec" : $"{flowrate} items/sec");
 			info.Add("Length", Math.Round(distance, 2).ToString());
 			
 			return info;
@@ -586,5 +722,7 @@ namespace Oxide.Plugins.JTechDeployables {
 				ToggleAutoStarter();
 			}
 		}
+
+		#endregion
 	}
 }

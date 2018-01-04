@@ -71,7 +71,7 @@ namespace PluginMerger {
 				
 				foreach (string curfile in files) { // for each file in directory
 
-					Console.WriteLine($"[PluginMerger] Parsing {curfile}");
+					Console.WriteLine($"[PluginMerger] Parsing {curfile.Substring(args[0].Length + 1)}");
 					
 					string curnamespace = string.Empty;
 					int bracketdepth = 0;

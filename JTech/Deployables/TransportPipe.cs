@@ -231,6 +231,8 @@ namespace Oxide.Plugins.JTechDeployables {
 
 			}
 
+			SetHealth(data.health);
+
 			return true;
 		}
 

@@ -38,7 +38,7 @@ namespace Oxide.Plugins.JTechDeployables {
 			
 			BaseEntity placeholder = userInfo.placingSelected[0];
 
-			SetHealth(placeholder.Health()); // set health baised on placeholder
+			SetHealth(placeholder.Health()); // set health based on placeholder
 			data.SetTransform(placeholder.transform);
 			
 			if (!Spawn())

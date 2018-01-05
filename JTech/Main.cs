@@ -83,12 +83,12 @@ namespace Oxide.Plugins {
 		}
 
 		void OnNewSave(string filename) {
-			// TODO
-			// clear save data
+			JDeployableManager.UnloadJDeployables();
+			JDeployableManager.SaveJDeployables();
+			DataManager.Save();
 		}
 
 		void OnServerSave() {
-
 			JDeployableManager.SaveJDeployables();
 			DataManager.Save();
 		}

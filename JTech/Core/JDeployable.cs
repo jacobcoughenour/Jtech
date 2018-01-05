@@ -1,5 +1,4 @@
-﻿using Newtonsoft.Json;
-using Oxide.Game.Rust.Cui;
+﻿using Oxide.Game.Rust.Cui;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -21,6 +20,73 @@ namespace Oxide.Plugins.JTechCore {
 			public float health;
 			public List<float> transform;
 			public Dictionary<string, string> custom = new Dictionary<string, string>();
+			public Dictionary<string, List<SavedItem>> inv = new Dictionary<string, List<SavedItem>>();
+
+			public class SavedItem {
+
+				public string shortname;
+				public int itemid;
+				public float condition;
+				public int amount;
+				public int ammoamount;
+				public string ammotype;
+				public ulong skinid;
+				public bool weapon;
+				public List<SavedItem> mods;
+
+				public SavedItem FromItem(Item item) {
+					SavedItem si = new SavedItem {
+						shortname = item.info?.shortname,
+						amount = item.amount,
+						mods = new List<SavedItem>(),
+						skinid = item.skin,
+						itemid = item.info.itemid,
+						weapon = false
+					};
+					if (item.hasCondition)
+						si.condition = item.condition;
+					if (item.info.category.ToString() == "Weapon") {
+						BaseProjectile weapon = item.GetHeldEntity() as BaseProjectile;
+						if (weapon != null) {
+							if (weapon.primaryMagazine != null) {
+								si.ammoamount = weapon.primaryMagazine.contents;
+								si.ammotype = weapon.primaryMagazine.ammoType.shortname;
+								si.weapon = true;
+								if (item.contents != null)
+									foreach (var mod in item.contents.itemList)
+										if (mod.info.itemid != 0)
+											si.mods.Add(FromItem(mod));
+							}
+						}
+					}
+					return si;
+				}
+
+				public Item ToItem() {
+					if (weapon) {
+						Item item = ItemManager.CreateByItemID(itemid, 1, skinid);
+						if (item.hasCondition)
+							item.condition = condition;
+						var weapon = item.GetHeldEntity() as BaseProjectile;
+						if (weapon != null) {
+							var def = ItemManager.FindItemDefinition(ammotype);
+							weapon.primaryMagazine.ammoType = def;
+							weapon.primaryMagazine.contents = ammoamount;
+						}
+						if (mods != null)
+							foreach (var mod in mods)
+								item.contents.AddItem(mod.ToItem().info, 1);
+						return item;
+					} else {
+						if (amount < 1)
+							amount = 1;
+						Item item = ItemManager.CreateByItemID(itemid, amount, skinid);
+						if (item.hasCondition)
+							item.condition =condition;
+						return item;
+					}
+				}
+			}
 
 			/// <summary>
 			/// Set userInfo as the owner
@@ -121,6 +187,8 @@ namespace Oxide.Plugins.JTechCore {
 
 		private BaseCombatEntity MainParent; // main parent entity that everything is parented to
 		private List<BaseCombatEntity> ChildEntities = new List<BaseCombatEntity>(); // child entities attached to the parent entity
+
+		private Dictionary<string, ItemContainer> containers = new Dictionary<string, ItemContainer>();
 
 		public void SetMainParent(BaseCombatEntity baseCombatEntity) {
 			baseCombatEntity.gameObject.AddComponent<Child>().parent = this;

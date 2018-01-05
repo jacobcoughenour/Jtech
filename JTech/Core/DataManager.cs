@@ -30,7 +30,7 @@ namespace Oxide.Plugins.JTechCore {
 			SaveData(data);
 		}
 
-		private static void LoadData<T>(ref T d) => d = Core.Interface.Oxide.DataFileSystem.ReadObject<T>("JTech");
-		private static void SaveData<T>(T d) => Core.Interface.Oxide.DataFileSystem.WriteObject("JTech", d);
+		private static void LoadData<T>(ref T d) => d = Interface.Oxide.DataFileSystem.ReadObject<T>("JTech");
+		private static void SaveData<T>(T d) => Interface.Oxide.DataFileSystem.WriteObject("JTech", d);
 	}
 }

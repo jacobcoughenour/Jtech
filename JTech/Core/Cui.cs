@@ -6,7 +6,7 @@ using Oxide.Game.Rust.Cui;
 using System.Linq;
 using System.Text;
 
-namespace Oxide.Plugins.JTechCore {
+namespace Oxide.Plugins.JtechCore {
 
 	public static class Cui {
 

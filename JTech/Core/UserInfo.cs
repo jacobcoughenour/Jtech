@@ -3,9 +3,9 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using Oxide.Game.Rust.Cui;
-using Oxide.Plugins.JTechCore;
+using Oxide.Plugins.JtechCore;
 
-namespace Oxide.Plugins.JTechCore {
+namespace Oxide.Plugins.JtechCore {
 
 	public class UserInfo : MonoBehaviour {
 

@@ -5,11 +5,11 @@ using UnityEngine;
 using Oxide.Core.Plugins;
 using Oxide.Game.Rust.Cui;
 using Oxide.Core.Libraries.Covalence;
-using Oxide.Plugins.JTechCore;
+using Oxide.Plugins.JtechCore;
 
-namespace Oxide.Plugins.JTechDeployables {
+namespace Oxide.Plugins.JtechDeployables {
 
-	[JInfo(typeof(JTech), "Auto Farm", "https://i.imgur.com/lEXshkx.png")]
+	[JInfo(typeof(Jtech), "Auto Farm", "https://i.imgur.com/lEXshkx.png")]
 	[JRequirement("scrap", 10)]
 
 	public class AutoFarm : JDeployable {

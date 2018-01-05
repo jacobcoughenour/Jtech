@@ -6,8 +6,8 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{A78E3401-9221-4642-A2EF-8C51A5479442}</ProjectGuid>
     <OutputType>Library</OutputType>
-    <RootNamespace>JTech</RootNamespace>
-    <AssemblyName>JTech</AssemblyName>
+    <RootNamespace>Jtech</RootNamespace>
+    <AssemblyName>Jtech</AssemblyName>
     <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <PublishUrl>publish\</PublishUrl>

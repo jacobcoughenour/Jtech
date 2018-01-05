@@ -3,7 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using Oxide.Core;
 
-namespace Oxide.Plugins.JTechCore {
+namespace Oxide.Plugins.JtechCore {
 
 	public static class DataManager {
 		
@@ -20,7 +20,7 @@ namespace Oxide.Plugins.JTechCore {
 
 			if (data == null) {
 				data = new StoredData();
-				Interface.Oxide.LogWarning("[JTechCore] save data is null?  Creating new save data...");
+				Interface.Oxide.LogWarning("[JtechCore] save data is null?  Creating new save data...");
 				SaveData(data);
 			}
 		}
@@ -30,7 +30,7 @@ namespace Oxide.Plugins.JTechCore {
 			SaveData(data);
 		}
 
-		private static void LoadData<T>(ref T d) => d = Interface.Oxide.DataFileSystem.ReadObject<T>("JTech");
-		private static void SaveData<T>(T d) => Interface.Oxide.DataFileSystem.WriteObject("JTech", d);
+		private static void LoadData<T>(ref T d) => d = Interface.Oxide.DataFileSystem.ReadObject<T>("Jtech");
+		private static void SaveData<T>(T d) => Interface.Oxide.DataFileSystem.WriteObject("Jtech", d);
 	}
 }

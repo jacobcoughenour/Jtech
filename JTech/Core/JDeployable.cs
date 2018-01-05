@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
-namespace Oxide.Plugins.JTechCore {
+namespace Oxide.Plugins.JtechCore {
 
 	public class JDeployable {
 
@@ -287,7 +287,7 @@ namespace Oxide.Plugins.JTechCore {
 				try {
 					callback();
 				} catch (Exception ex) {
-					Debug.Log($"[JTechCore] JDeployable.Child.RunDelayed: {ex.InnerException.Message}");
+					Debug.Log($"[JtechCore] JDeployable.Child.RunDelayed: {ex.InnerException.Message}");
 				}
 				delayedrun = null;
 			}

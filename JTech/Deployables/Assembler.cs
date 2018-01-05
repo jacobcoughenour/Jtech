@@ -1,11 +1,11 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
-using Oxide.Plugins.JTechCore;
+using Oxide.Plugins.JtechCore;
 using System;
 
-namespace Oxide.Plugins.JTechDeployables {
+namespace Oxide.Plugins.JtechDeployables {
 	
-	[JInfo(typeof(JTech), "Assembler", "https://i.imgur.com/R9mD3VQ.png", "This high-tech machine can assemble any item from it's blueprint with the item's ingredients and some low grade fuel.")]
+	[JInfo(typeof(Jtech), "Assembler", "https://i.imgur.com/R9mD3VQ.png", "This high-tech machine can assemble any item from it's blueprint with the item's ingredients and some low grade fuel.")]
 	[JRequirement("vending.machine"), JRequirement("gears", 5), JRequirement("metal.refined", 20)]
 	[JUpdate(10, 5)]
 

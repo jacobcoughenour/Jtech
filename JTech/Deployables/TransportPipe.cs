@@ -1,14 +1,14 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
-using Oxide.Plugins.JTechCore;
-using Oxide.Plugins.JTechCore.Util;
+using Oxide.Plugins.JtechCore;
+using Oxide.Plugins.JtechCore.Util;
 using System;
 using System.Linq;
 using Oxide.Game.Rust.Cui;
 
-namespace Oxide.Plugins.JTechDeployables {
+namespace Oxide.Plugins.JtechDeployables {
 
-	[JInfo(typeof(JTech), "Transport Pipe", "https://vignette.wikia.nocookie.net/play-rust/images/4/4a/Metal_Pipe_icon.png/revision/latest/scale-to-width-down/200", "Transfers items or liquids between containers.  Upgrade it with the hammer to increase the flow rate and functionality.")]
+	[JInfo(typeof(Jtech), "Transport Pipe", "https://vignette.wikia.nocookie.net/play-rust/images/4/4a/Metal_Pipe_icon.png/revision/latest/scale-to-width-down/200", "Transfers items or liquids between containers.  Upgrade it with the hammer to increase the flow rate and functionality.")]
 	[JRequirement("wood", 20, "segment")]
 	[JUpdate(4, 16)]
 

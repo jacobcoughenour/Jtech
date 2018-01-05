@@ -7,7 +7,7 @@ using Oxide.Core.Plugins;
 using Oxide.Core;
 using System.Reflection;
 
-namespace Oxide.Plugins.JTechCore {
+namespace Oxide.Plugins.JtechCore {
 
 	public class JDeployableManager {
 
@@ -153,15 +153,15 @@ namespace Oxide.Plugins.JTechCore {
 						loadcount[info.Name]++;
 						totalloadcount++;
 					} else
-						Interface.Oxide.LogWarning($"[JTechCore] Failed to Load Deployable: {de.Value} {de.Key}");
+						Interface.Oxide.LogWarning($"[JtechCore] Failed to Load Deployable: {de.Value} {de.Key}");
 				}
 			}
 
 			string top = $"--- {totalloadcount} JDeployable(s) Loaded ---";
-			Interface.Oxide.LogInfo($"[JTechCore] {top}");
+			Interface.Oxide.LogInfo($"[JtechCore] {top}");
 			foreach (var count in loadcount)
-				Interface.Oxide.LogInfo($"[JTechCore] > {count.Value} {count.Key}(s)");
-			Interface.Oxide.LogInfo($"[JTechCore] {new String('-', top.Length)}");
+				Interface.Oxide.LogInfo($"[JtechCore] > {count.Value} {count.Key}(s)");
+			Interface.Oxide.LogInfo($"[JtechCore] {new String('-', top.Length)}");
 		}
 
 		private static bool LoadJDeployable(int id, DeployableSaveData data) {
@@ -188,7 +188,7 @@ namespace Oxide.Plugins.JTechCore {
 					spawned = (bool) methodInfo.Invoke(instance, new object[] { false });
 				} catch (Exception e) {
 					spawned = false;
-					Interface.Oxide.LogWarning($"[JTechCore] Failed to Spawn Deployable: {e.InnerException.Message}");
+					Interface.Oxide.LogWarning($"[JtechCore] Failed to Spawn Deployable: {e.InnerException.Message}");
 				}
 			}
 			if (!spawned) {
@@ -235,18 +235,18 @@ namespace Oxide.Plugins.JTechCore {
 							totalsavecount++;
 							savecount[info.Name]++;
 						} else
-							Interface.Oxide.LogWarning($"[JTechCore] Failed to Save Deployable: {de} {de.Id}");
+							Interface.Oxide.LogWarning($"[JtechCore] Failed to Save Deployable: {de} {de.Id}");
 					}
 				}
 			}
 
 			string top = $"--- {totalsavecount} JDeployable(s) Saved ---";
-			Interface.Oxide.LogInfo($"[JTechCore] {top}");
+			Interface.Oxide.LogInfo($"[JtechCore] {top}");
 			foreach (var count in savecount) {
 				if (count.Value > 0)
-					Interface.Oxide.LogInfo($"[JTechCore] > {count.Value} {count.Key}(s)");
+					Interface.Oxide.LogInfo($"[JtechCore] > {count.Value} {count.Key}(s)");
 			}
-			Interface.Oxide.LogInfo($"[JTechCore] {new String('-', top.Length)}");
+			Interface.Oxide.LogInfo($"[JtechCore] {new String('-', top.Length)}");
 			
 		}
 
@@ -304,12 +304,12 @@ namespace Oxide.Plugins.JTechCore {
 			JInfoAttribute info = (JInfoAttribute) System.Attribute.GetCustomAttribute(typeof(T), typeof(JInfoAttribute));
 
 			if (info == null) {
-				Interface.Oxide.LogWarning($"[JTechCore] Failed to register ({typeof(T)}) - Missing JInfoAttribute.");
+				Interface.Oxide.LogWarning($"[JtechCore] Failed to register ({typeof(T)}) - Missing JInfoAttribute.");
 				return;
 			}
 
 			if (DeployableTypes.ContainsKey(typeof(T)) || DeployableTypeRequirements.ContainsKey(typeof(T))) {
-				Interface.Oxide.LogWarning($"[JTechCore] [{info.PluginInfo.Title}] {info.Name} has already been registered!");
+				Interface.Oxide.LogWarning($"[JtechCore] [{info.PluginInfo.Title}] {info.Name} has already been registered!");
 				return;
 			}
 
@@ -317,10 +317,10 @@ namespace Oxide.Plugins.JTechCore {
 			List<JRequirementAttribute> requirements = System.Attribute.GetCustomAttributes(typeof(T), typeof(JRequirementAttribute)).OfType<JRequirementAttribute>().ToList();
 
 			if (requirements == null || requirements.Count == 0) {
-				Interface.Oxide.LogWarning($"[JTechCore] Failed to register ({typeof(T)}) - Missing JRequirementAttribute.");
+				Interface.Oxide.LogWarning($"[JtechCore] Failed to register ({typeof(T)}) - Missing JRequirementAttribute.");
 				return;
 			} else if (requirements.Count > 5) {
-				Interface.Oxide.LogWarning($"[JTechCore] Failed to register ({typeof(T)}) - More than 5 JRequirementAttribute are not allowed.");
+				Interface.Oxide.LogWarning($"[JtechCore] Failed to register ({typeof(T)}) - More than 5 JRequirementAttribute are not allowed.");
 				return;
 			}
 
@@ -330,7 +330,7 @@ namespace Oxide.Plugins.JTechCore {
 			JUpdateAttribute jupdate = (JUpdateAttribute) System.Attribute.GetCustomAttribute(typeof(T), typeof(JUpdateAttribute));
 
 			if (jupdate == null) {
-				Interface.Oxide.LogWarning($"[JTechCore] Failed to register ({typeof(T)}) - Missing JUpdateAttribute.");
+				Interface.Oxide.LogWarning($"[JtechCore] Failed to register ({typeof(T)}) - Missing JUpdateAttribute.");
 				return;
 			} 
 
@@ -340,7 +340,7 @@ namespace Oxide.Plugins.JTechCore {
 			if (!spawnedDeployablesByType.ContainsKey(typeof(T)))
 				spawnedDeployablesByType.Add(typeof(T), new List<JDeployable>());
 
-			Interface.Oxide.LogInfo($"[JTechCore] Registered Deployable: [{info.PluginInfo.Title}] {info.Name}");
+			Interface.Oxide.LogInfo($"[JtechCore] Registered Deployable: [{info.PluginInfo.Title}] {info.Name}");
 			
 		}
 
@@ -355,9 +355,9 @@ namespace Oxide.Plugins.JTechCore {
 			JInfoAttribute info = (JInfoAttribute) System.Attribute.GetCustomAttribute(typeof(T), typeof(JInfoAttribute));
 
 			if (DeployableTypes.Remove(typeof(T)) && DeployableTypeRequirements.Remove(typeof(T)) && DeployableTypeUpdates.Remove(typeof(T))) {
-				Interface.Oxide.LogInfo($"[JTechCore] Unregistered Deployable: [{info.PluginInfo.Title}] {info.Name}");
+				Interface.Oxide.LogInfo($"[JtechCore] Unregistered Deployable: [{info.PluginInfo.Title}] {info.Name}");
 			} else {
-				Interface.Oxide.LogInfo($"[JTechCore] Failed to Unregistered Deployable: [{info.PluginInfo.Title}] {info.Name}");
+				Interface.Oxide.LogInfo($"[JtechCore] Failed to Unregistered Deployable: [{info.PluginInfo.Title}] {info.Name}");
 			}
 		}
 
@@ -402,7 +402,7 @@ namespace Oxide.Plugins.JTechCore {
 					placed = ((bool) methodInfo.Invoke(instance, new object[] { userInfo }));
 				} catch (Exception e) {
 					placed = false;
-					Interface.Oxide.LogWarning($"[JTechCore] Failed to Place Deployable: {e.InnerException.Message}");
+					Interface.Oxide.LogWarning($"[JtechCore] Failed to Place Deployable: {e.InnerException.Message}");
 					userInfo.ShowErrorMessage("Failed to Place Deployable", e.InnerException.Message);
 				}
 			}

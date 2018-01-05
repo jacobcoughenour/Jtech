@@ -3,7 +3,7 @@ using Oxide.Core;
 using Oxide.Plugins;
 using System.Collections.Generic;
 
-namespace Oxide.Plugins.JTechCore {
+namespace Oxide.Plugins.JtechCore {
 
 	[AttributeUsage(AttributeTargets.Class, AllowMultiple = false, Inherited = true)]
 	public class JUpdateAttribute : Attribute {

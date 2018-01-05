@@ -5,7 +5,7 @@ using UnityEngine;
 using Oxide.Game.Rust.Cui;
 using System.Linq;
 
-namespace Oxide.Plugins.JTechCore.Util {
+namespace Oxide.Plugins.JtechCore.Util {
 
 	public static class Icons {
 

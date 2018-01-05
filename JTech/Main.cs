@@ -7,12 +7,12 @@ using Oxide.Plugins;
 using Oxide.Game.Rust.Cui;
 using Oxide.Core.Libraries.Covalence;
 using UnityEngine;
-using Oxide.Plugins.JTechCore;
+using Oxide.Plugins.JtechCore;
 
 namespace Oxide.Plugins {
 
-	//PM.INSERT(PluginInfo, TheGreatJ, http://oxidemod.org/plugins/jpipes.2402/, https://github.com/jacobcoughenour/JTech)
-	class JTech : RustPlugin {
+	//PM.INSERT(PluginInfo, TheGreatJ, http://oxidemod.org/plugins/jpipes.2402/, https://github.com/jacobcoughenour/Jtech)
+	class Jtech : RustPlugin {
 
 		#region Oxide Hooks
 
@@ -64,7 +64,7 @@ namespace Oxide.Plugins {
 			List<UnityEngine.Object> uis = new List<UnityEngine.Object>();
 			foreach (var player in BasePlayer.activePlayerList) {
 				foreach (var c in player.GetComponents<Component>()) {
-					if (c.GetType().ToString() == "Oxide.Plugins.JTechCore.UserInfo") {
+					if (c.GetType().ToString() == "Oxide.Plugins.JtechCore.UserInfo") {
 						uis.Add(c);
 					}
 				}
@@ -94,11 +94,11 @@ namespace Oxide.Plugins {
 		}
 
 		void RegisterDeployables() {
-			JDeployableManager.RegisterJDeployable<JTechDeployables.TransportPipe>();
-			JDeployableManager.RegisterJDeployable<JTechDeployables.Assembler>();
-			//JDeployableManager.RegisterJDeployable<JTechDeployables.SyncBox>();
-			//JDeployableManager.RegisterJDeployable<JTechDeployables.TrashCan>();
-			//JDeployableManager.RegisterJDeployable<JTechDeployables.AutoFarm>();
+			JDeployableManager.RegisterJDeployable<JtechDeployables.TransportPipe>();
+			JDeployableManager.RegisterJDeployable<JtechDeployables.Assembler>();
+			//JDeployableManager.RegisterJDeployable<JtechDeployables.SyncBox>();
+			//JDeployableManager.RegisterJDeployable<JtechDeployables.TrashCan>();
+			//JDeployableManager.RegisterJDeployable<JtechDeployables.AutoFarm>();
 		}
 
 

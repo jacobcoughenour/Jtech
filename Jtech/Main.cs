@@ -14,30 +14,42 @@ namespace Oxide.Plugins {
 	//PM.INSERT(PluginInfo, TheGreatJ, http://oxidemod.org/plugins/jpipes.2402/, https://github.com/jacobcoughenour/Jtech)
 	class Jtech : RustPlugin {
 
-		#region Oxide Hooks
+		#region API
 
-		void Init() {
-
-			// TODO
-			// register lang messages
-			// load config
-
-			NextFrame(() => {
-				foreach (var player in BasePlayer.activePlayerList)
-					UserInfo.Get(player);
-			});
-
+		void OnPluginLoaded(Plugin plugin) {
+			var r = plugin?.Call("RegisterJDeployables");
 		}
+
+		void OnPluginUnloaded(Plugin plugin) {
+			OnServerSave();
+			//JDeployableManager.LoadDeployables();
+		}
+
+		void RegisterJDeployables() {
+			JDeployableManager.RegisterJDeployable<JtechDeployables.TransportPipe>();
+			JDeployableManager.RegisterJDeployable<JtechDeployables.Assembler>();
+			//JDeployableManager.RegisterJDeployable<JtechDeployables.SyncBox>();
+			//JDeployableManager.RegisterJDeployable<JtechDeployables.TrashCan>();
+			//JDeployableManager.RegisterJDeployable<JtechDeployables.AutoFarm>();
+		}
+
+		#endregion
+
+		#region Oxide Hooks
+		
 
 		void OnServerInitialized() {
 			
-			RegisterDeployables();
+			NextFrame(() => {
+				foreach (var player in BasePlayer.activePlayerList)
+					UserInfo.Get(player);
 
-			DataManager.Load();
-			JDeployableManager.LoadDeployables();
+				DataManager.Load();
+				JDeployableManager.LoadDeployables();
 
-			// start update
-			timer.Repeat(0.25f, 0, JDeployableManager.Update);
+				// start update
+				timer.Repeat(0.25f, 0, JDeployableManager.Update);
+			});
 		}
 		
 		void Unload() {
@@ -56,7 +68,18 @@ namespace Oxide.Plugins {
 			}
 
 		}
-		
+
+		void OnNewSave(string filename) {
+			JDeployableManager.UnloadJDeployables();
+			JDeployableManager.SaveJDeployables();
+			DataManager.Save();
+		}
+
+		void OnServerSave() {
+			JDeployableManager.SaveJDeployables();
+			DataManager.Save();
+		}
+
 		// removes anything named UserInfo from the player
 		[ConsoleCommand("jtech.clean")]
 		private void cmdjtechclean(ConsoleSystem.Arg arg) {
@@ -81,26 +104,6 @@ namespace Oxide.Plugins {
 					UserInfo.Get(player);
 			});
 		}
-
-		void OnNewSave(string filename) {
-			JDeployableManager.UnloadJDeployables();
-			JDeployableManager.SaveJDeployables();
-			DataManager.Save();
-		}
-
-		void OnServerSave() {
-			JDeployableManager.SaveJDeployables();
-			DataManager.Save();
-		}
-
-		void RegisterDeployables() {
-			JDeployableManager.RegisterJDeployable<JtechDeployables.TransportPipe>();
-			JDeployableManager.RegisterJDeployable<JtechDeployables.Assembler>();
-			//JDeployableManager.RegisterJDeployable<JtechDeployables.SyncBox>();
-			//JDeployableManager.RegisterJDeployable<JtechDeployables.TrashCan>();
-			//JDeployableManager.RegisterJDeployable<JtechDeployables.AutoFarm>();
-		}
-
 
 		#region Player
 

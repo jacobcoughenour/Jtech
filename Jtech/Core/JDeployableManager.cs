@@ -11,7 +11,7 @@ namespace Oxide.Plugins.JtechCore {
 
 	public class JDeployableManager {
 
-		// Deployables that are currently spawned
+		// JDeployables that are currently spawned
 		private static Dictionary<int, JDeployable> spawnedDeployables = new Dictionary<int, JDeployable>();
 		private static Dictionary<Type, List<JDeployable>> spawnedDeployablesByType = new Dictionary<Type, List<JDeployable>>();
 
@@ -139,28 +139,28 @@ namespace Oxide.Plugins.JtechCore {
 				return;
 
 			int totalloadcount = 0;
-			Dictionary<string, int> loadcount = new Dictionary<string, int>();
+			Dictionary<JInfoAttribute, int> loadcount = new Dictionary<JInfoAttribute, int>();
 			
 			foreach (var de in DataManager.data.d) {
 				
 				Type deployabletype;
 				JInfoAttribute info;
 				if (TryGetType(de.Value.t, out deployabletype) && DeployableTypes.TryGetValue(deployabletype, out info)) {
-
-					if (!loadcount.Keys.Contains(info.Name))
-						loadcount.Add(info.Name, 0);
+					
+					if (!loadcount.Keys.Contains(info))
+						loadcount.Add(info, 0);
 					if (LoadJDeployable(de.Key, de.Value)) {
-						loadcount[info.Name]++;
+						loadcount[info]++;
 						totalloadcount++;
 					} else
-						Interface.Oxide.LogWarning($"[JtechCore] Failed to Load Deployable: {de.Value} {de.Key}");
+						Interface.Oxide.LogWarning($"[JtechCore] Failed to Load JDeployable: {de.Value} {de.Key}");
 				}
 			}
 
 			string top = $"--- {totalloadcount} JDeployable(s) Loaded ---";
 			Interface.Oxide.LogInfo($"[JtechCore] {top}");
 			foreach (var count in loadcount)
-				Interface.Oxide.LogInfo($"[JtechCore] > {count.Value} {count.Key}(s)");
+				Interface.Oxide.LogInfo($"[JtechCore] > {count.Value} [{count.Key.PluginInfo.Title}] {count.Key.Name}(s)");
 			Interface.Oxide.LogInfo($"[JtechCore] {new String('-', top.Length)}");
 		}
 
@@ -188,7 +188,7 @@ namespace Oxide.Plugins.JtechCore {
 					spawned = (bool) methodInfo.Invoke(instance, new object[] { false });
 				} catch (Exception e) {
 					spawned = false;
-					Interface.Oxide.LogWarning($"[JtechCore] Failed to Spawn Deployable: {e.InnerException.Message}");
+					Interface.Oxide.LogWarning($"[JtechCore] Failed to Spawn JDeployable: {e.InnerException.Message}");
 				}
 			}
 			if (!spawned) {
@@ -222,20 +222,20 @@ namespace Oxide.Plugins.JtechCore {
 			DataManager.data.d.Clear();
 
 			int totalsavecount = 0;
-			Dictionary<string, int> savecount = new Dictionary<string, int>();
+			Dictionary<JInfoAttribute, int> savecount = new Dictionary<JInfoAttribute, int>();
 			
 			foreach (var deployablebytype in spawnedDeployablesByType) {
 
 				JInfoAttribute info;
 				if (DeployableTypes.TryGetValue(deployablebytype.Key, out info)) {
 
-					savecount.Add(info.Name, 0);
+					savecount.Add(info, 0);
 					foreach (var de in deployablebytype.Value) {
 						if (SaveJDeployable(de.Id, de)) {
 							totalsavecount++;
-							savecount[info.Name]++;
+							savecount[info]++;
 						} else
-							Interface.Oxide.LogWarning($"[JtechCore] Failed to Save Deployable: {de} {de.Id}");
+							Interface.Oxide.LogWarning($"[JtechCore] Failed to Save JDeployable: {de} {de.Id}");
 					}
 				}
 			}
@@ -244,7 +244,7 @@ namespace Oxide.Plugins.JtechCore {
 			Interface.Oxide.LogInfo($"[JtechCore] {top}");
 			foreach (var count in savecount) {
 				if (count.Value > 0)
-					Interface.Oxide.LogInfo($"[JtechCore] > {count.Value} {count.Key}(s)");
+					Interface.Oxide.LogInfo($"[JtechCore] > {count.Value} [{count.Key.PluginInfo.Title}] {count.Key.Name}(s)");
 			}
 			Interface.Oxide.LogInfo($"[JtechCore] {new String('-', top.Length)}");
 			
@@ -287,7 +287,7 @@ namespace Oxide.Plugins.JtechCore {
 
 		#endregion
 
-		#region Deployable Types
+		#region JDeployable Types
 
 		public static Dictionary<Type, JInfoAttribute> DeployableTypes = new Dictionary<Type, JInfoAttribute>();
 		public static Dictionary<Type, List<JRequirementAttribute>> DeployableTypeRequirements = new Dictionary<Type, List<JRequirementAttribute>>();
@@ -340,7 +340,7 @@ namespace Oxide.Plugins.JtechCore {
 			if (!spawnedDeployablesByType.ContainsKey(typeof(T)))
 				spawnedDeployablesByType.Add(typeof(T), new List<JDeployable>());
 
-			Interface.Oxide.LogInfo($"[JtechCore] Registered Deployable: [{info.PluginInfo.Title}] {info.Name}");
+			Interface.Oxide.LogInfo($"[JtechCore] Registered JDeployable: [{info.PluginInfo.Title}] {info.Name}");
 			
 		}
 
@@ -355,9 +355,9 @@ namespace Oxide.Plugins.JtechCore {
 			JInfoAttribute info = (JInfoAttribute) System.Attribute.GetCustomAttribute(typeof(T), typeof(JInfoAttribute));
 
 			if (DeployableTypes.Remove(typeof(T)) && DeployableTypeRequirements.Remove(typeof(T)) && DeployableTypeUpdates.Remove(typeof(T))) {
-				Interface.Oxide.LogInfo($"[JtechCore] Unregistered Deployable: [{info.PluginInfo.Title}] {info.Name}");
+				Interface.Oxide.LogInfo($"[JtechCore] Unregistered JDeployable: [{info.PluginInfo.Title}] {info.Name}");
 			} else {
-				Interface.Oxide.LogInfo($"[JtechCore] Failed to Unregistered Deployable: [{info.PluginInfo.Title}] {info.Name}");
+				Interface.Oxide.LogInfo($"[JtechCore] Failed to Unregistered JDeployable: [{info.PluginInfo.Title}] {info.Name}");
 			}
 		}
 
@@ -402,13 +402,13 @@ namespace Oxide.Plugins.JtechCore {
 					placed = ((bool) methodInfo.Invoke(instance, new object[] { userInfo }));
 				} catch (Exception e) {
 					placed = false;
-					Interface.Oxide.LogWarning($"[JtechCore] Failed to Place Deployable: {e.InnerException.Message}");
-					userInfo.ShowErrorMessage("Failed to Place Deployable", e.InnerException.Message);
+					Interface.Oxide.LogWarning($"[JtechCore] Failed to Place JDeployable: {e.InnerException.Message}");
+					userInfo.ShowErrorMessage("Failed to Place JDeployable", e.InnerException.Message);
 				}
 			}
 			if (!placed) {
 				// clean up if deployable spawned anything
-				userInfo.ShowErrorMessage("Failed to Spawn Deployable");
+				userInfo.ShowErrorMessage("Failed to Spawn JDeployable");
 				deployabletype.GetMethod("Kill")?.Invoke(instance, new object[] { BaseNetworkable.DestroyMode.None, false });
 				return false;
 			}

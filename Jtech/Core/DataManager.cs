@@ -8,7 +8,7 @@ namespace Oxide.Plugins.JtechCore {
 	public static class DataManager {
 		
 		public class StoredData {
-			public Dictionary<int, JDeployableManager.DeployableSaveData> d = new Dictionary<int, JDeployableManager.DeployableSaveData>();
+			public Dictionary<string, Dictionary<int, JDeployableManager.DeployableSaveData>> p = new Dictionary<string, Dictionary<int, JDeployableManager.DeployableSaveData>>();
 		}
 
 		public static StoredData data;
@@ -26,7 +26,6 @@ namespace Oxide.Plugins.JtechCore {
 		}
 
 		public static void Save() {
-			
 			SaveData(data);
 		}
 

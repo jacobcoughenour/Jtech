@@ -14,6 +14,7 @@ namespace Oxide.Plugins.JtechCore {
 		// JDeployables that are currently spawned
 		private static Dictionary<int, JDeployable> spawnedDeployables = new Dictionary<int, JDeployable>();
 		private static Dictionary<Type, List<JDeployable>> spawnedDeployablesByType = new Dictionary<Type, List<JDeployable>>();
+		private static Dictionary<string, List<JDeployable>> spawnedDeployablesByPlugin = new Dictionary<string, List<JDeployable>>();
 
 		private static void SpawnedDeployablesAdd(int id, JDeployable instance, Type type) {
 			spawnedDeployables.Add(id, instance);
@@ -21,6 +22,14 @@ namespace Oxide.Plugins.JtechCore {
 			if (!spawnedDeployablesByType.ContainsKey(type))
 				spawnedDeployablesByType.Add(type, new List<JDeployable>());
 			spawnedDeployablesByType[type].Add(instance);
+			
+			JInfoAttribute info;
+			if (!DeployableTypes.TryGetValue(type, out info))
+				return;
+
+			if (!spawnedDeployablesByPlugin.ContainsKey(info.PluginInfo.Title))
+				spawnedDeployablesByPlugin.Add(info.PluginInfo.Title, new List<JDeployable>());
+			spawnedDeployablesByPlugin[info.PluginInfo.Title].Add(instance);
 		}
 
 		private static void SpawnedDeployablesRemove(int id, JDeployable instance) {
@@ -33,6 +42,13 @@ namespace Oxide.Plugins.JtechCore {
 
 			if (spawnedDeployablesByType.ContainsKey(type))
 				spawnedDeployablesByType[type].Remove(instance);
+
+			JInfoAttribute info;
+			if (!DeployableTypes.TryGetValue(type, out info))
+				return;
+
+			if (spawnedDeployablesByPlugin.ContainsKey(info.PluginInfo.Title))
+				spawnedDeployablesByPlugin[info.PluginInfo.Title].Remove(instance);
 
 		}
 
@@ -134,14 +150,20 @@ namespace Oxide.Plugins.JtechCore {
 			public JDeployable.SaveData s;
 		}
 
-		public static void LoadDeployables() {
-			if (DataManager.data == null || DataManager.data.d == null)
+		public static void LoadJDeployables(string pluginnamespace) {
+
+			if (DataManager.data == null || DataManager.data.p == null) {
+				DataManager.Load();
+			}
+
+			Dictionary<int, DeployableSaveData> pluginsavedata;
+			if (!DataManager.data.p.TryGetValue(pluginnamespace, out pluginsavedata))
 				return;
 
 			int totalloadcount = 0;
 			Dictionary<JInfoAttribute, int> loadcount = new Dictionary<JInfoAttribute, int>();
 			
-			foreach (var de in DataManager.data.d) {
+			foreach (var de in pluginsavedata) {
 				
 				Type deployabletype;
 				JInfoAttribute info;
@@ -215,28 +237,53 @@ namespace Oxide.Plugins.JtechCore {
 			return true;
 		}
 
-		public static void SaveJDeployables() {
-			if (DataManager.data == null || DataManager.data.d == null)
-				return;
+		public static void SaveAllJDeployables() {
 
-			DataManager.data.d.Clear();
+			Interface.Oxide.LogWarning(spawnedDeployablesByPlugin.Count.ToString());
+
+			foreach (var p in spawnedDeployablesByPlugin) {
+				SaveJDeployables(p.Key);
+			}
+		}
+
+		public static void SaveJDeployables(string pluginnamespace) {
+			if (DataManager.data == null || DataManager.data.p == null) {
+				DataManager.Load();
+			}
+
+			Dictionary<int, DeployableSaveData> pluginsavedata;
+			if (DataManager.data.p.ContainsKey(pluginnamespace)) {
+				if (!DataManager.data.p.TryGetValue(pluginnamespace, out pluginsavedata)) {
+					return;
+				}
+			} else {
+				pluginsavedata = new Dictionary<int, DeployableSaveData>();
+				DataManager.data.p.Add(pluginnamespace, pluginsavedata);
+			}
+			
+			pluginsavedata.Clear();
 
 			int totalsavecount = 0;
 			Dictionary<JInfoAttribute, int> savecount = new Dictionary<JInfoAttribute, int>();
+
+			List<JDeployable> deps;
+			if (!spawnedDeployablesByPlugin.TryGetValue(pluginnamespace, out deps))
+				return;
 			
-			foreach (var deployablebytype in spawnedDeployablesByType) {
-
+			foreach (var de in deps) {
+					
 				JInfoAttribute info;
-				if (DeployableTypes.TryGetValue(deployablebytype.Key, out info)) {
+				if (DeployableTypes.TryGetValue(de.GetType(), out info)) {
 
-					savecount.Add(info, 0);
-					foreach (var de in deployablebytype.Value) {
-						if (SaveJDeployable(de.Id, de)) {
-							totalsavecount++;
-							savecount[info]++;
-						} else
-							Interface.Oxide.LogWarning($"[JtechCore] Failed to Save JDeployable: {de} {de.Id}");
-					}
+					if (!savecount.ContainsKey(info))
+						savecount.Add(info, 0);
+
+					if (SaveJDeployable(de.Id, de)) {
+						totalsavecount++;
+						savecount[info]++;
+					} else
+						Interface.Oxide.LogWarning($"[JtechCore] Failed to Save JDeployable: [{pluginnamespace}] {info.Name} {de.Id}");
+					
 				}
 			}
 
@@ -252,10 +299,19 @@ namespace Oxide.Plugins.JtechCore {
 
 		private static bool SaveJDeployable(int id, JDeployable d) {
 
-			DeployableSaveData sd = new DeployableSaveData();
-			sd.t = d.ToString();
-			sd.s = d.data;
-			DataManager.data.d.Add(id, sd);
+			DeployableSaveData sd = new DeployableSaveData {
+				t = d.ToString(),
+				s = d.data
+			};
+			
+			JInfoAttribute info = null;
+			if (!DeployableTypes.TryGetValue(d.GetType(), out info))
+				return false;
+
+			if (!DataManager.data.p.ContainsKey(info.PluginInfo.Title))
+				DataManager.data.p.Add(info.PluginInfo.Title, new Dictionary<int, DeployableSaveData>());
+
+			DataManager.data.p[info.PluginInfo.Title].Add(id, sd);
 
 			return true;
 		}

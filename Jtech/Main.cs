@@ -18,11 +18,16 @@ namespace Oxide.Plugins {
 
 		void OnPluginLoaded(Plugin plugin) {
 			var r = plugin?.Call("RegisterJDeployables");
+
+			JDeployableManager.LoadJDeployables(plugin.Title);
 		}
 
 		void OnPluginUnloaded(Plugin plugin) {
-			OnServerSave();
-			//JDeployableManager.LoadDeployables();
+			//OnServerSave();
+			//JDeployableManager.LoadJDeployables();
+
+			JDeployableManager.SaveJDeployables(plugin.Title);
+			DataManager.Save();
 		}
 
 		void RegisterJDeployables() {
@@ -43,9 +48,6 @@ namespace Oxide.Plugins {
 			NextFrame(() => {
 				foreach (var player in BasePlayer.activePlayerList)
 					UserInfo.Get(player);
-
-				DataManager.Load();
-				JDeployableManager.LoadDeployables();
 
 				// start update
 				timer.Repeat(0.25f, 0, JDeployableManager.Update);
@@ -71,12 +73,11 @@ namespace Oxide.Plugins {
 
 		void OnNewSave(string filename) {
 			JDeployableManager.UnloadJDeployables();
-			JDeployableManager.SaveJDeployables();
 			DataManager.Save();
 		}
 
 		void OnServerSave() {
-			JDeployableManager.SaveJDeployables();
+			JDeployableManager.SaveAllJDeployables();
 			DataManager.Save();
 		}
 

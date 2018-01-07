@@ -104,7 +104,13 @@ namespace Oxide.Plugins.JtechCore.Util {
 			// TODO if e is JDeployable.Child, get JDeployable url
 			// TODO add more containers
 
-			if (e is BoxStorage) {
+			var c = e.GetComponent<JDeployable.Child>();
+			if (c != null) {
+				JInfoAttribute info;
+				if (JDeployableManager.DeployableTypes.TryGetValue(c.parent.GetType(), out info))
+					return info.IconUrl;
+
+			} else if (e is BoxStorage) {
 				string panel = e.GetComponent<StorageContainer>().panelName;
 				if (panel == "largewoodbox")
 					return GetItemIconURL("box.wooden.large", size);

@@ -16,26 +16,43 @@ namespace Oxide.Plugins {
 
 		#region API
 
+		// when any plugin loads (including Jtech)
 		void OnPluginLoaded(Plugin plugin) {
+
+			// call RegisterJDeployables hook for this plugin
 			var r = plugin?.Call("RegisterJDeployables");
 
+			// if the plugin didn't register any JDeployables
+			if (!JDeployableManager.isPluginRegistered(plugin.Title))
+				return;
+
+			// load JDeployables from save data for this plugin
 			JDeployableManager.LoadJDeployables(plugin.Title);
 		}
 
+		// when any plugin unloads (including Jtech)
 		void OnPluginUnloaded(Plugin plugin) {
-			//OnServerSave();
-			//JDeployableManager.LoadJDeployables();
-
+			if (!JDeployableManager.isPluginRegistered(plugin.Title))
+				return;
+			
+			// save JDeployables from this plugin
 			JDeployableManager.SaveJDeployables(plugin.Title);
 			DataManager.Save();
+
+			// unload spawned JDeployables from this plugin
+			JDeployableManager.UnloadJDeployables(plugin.Title);
+
+			// unregister JDeployable types from this plugin
+			JDeployableManager.UnregisterJDeployables(plugin.Title);
 		}
 
+		/// <summary>
+		/// JDeployable API
+		/// <para/>Called when the plugin loads to register custom JDeployables with the JDeployableManager.
+		/// </summary>
 		void RegisterJDeployables() {
 			JDeployableManager.RegisterJDeployable<JtechDeployables.TransportPipe>();
 			JDeployableManager.RegisterJDeployable<JtechDeployables.Assembler>();
-			//JDeployableManager.RegisterJDeployable<JtechDeployables.SyncBox>();
-			//JDeployableManager.RegisterJDeployable<JtechDeployables.TrashCan>();
-			//JDeployableManager.RegisterJDeployable<JtechDeployables.AutoFarm>();
 		}
 
 		#endregion
@@ -56,9 +73,6 @@ namespace Oxide.Plugins {
 		
 		void Unload() {
 
-			OnServerSave();
-			JDeployableManager.UnloadJDeployables();
-
 			// Destroy UserInfo from all the players
 			var users = UnityEngine.Object.FindObjectsOfType<UserInfo>();
 			if (users != null) {
@@ -69,10 +83,11 @@ namespace Oxide.Plugins {
 				}
 			}
 
+			OnPluginUnloaded(this);
 		}
 
 		void OnNewSave(string filename) {
-			JDeployableManager.UnloadJDeployables();
+			//JDeployableManager.UnloadJDeployables();
 			DataManager.Save();
 		}
 

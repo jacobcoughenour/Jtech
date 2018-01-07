@@ -100,8 +100,7 @@ namespace Oxide.Plugins.JtechCore.Util {
 		}
 
 		public static string GetContainerIconURL(BaseEntity e, int size) {
-
-			// TODO if e is JDeployable.Child, get JDeployable url
+			
 			// TODO add more containers
 
 			var c = e.GetComponent<JDeployable.Child>();

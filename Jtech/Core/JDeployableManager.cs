@@ -150,14 +150,16 @@ namespace Oxide.Plugins.JtechCore {
 			public JDeployable.SaveData s;
 		}
 
-		public static void LoadJDeployables(string pluginnamespace) {
+		public static void LoadJDeployables(string pluginname) {
+			if (!DeployableTypesByPlugin.ContainsKey(pluginname))
+				return;
 
 			if (DataManager.data == null || DataManager.data.p == null) {
 				DataManager.Load();
 			}
 
 			Dictionary<int, DeployableSaveData> pluginsavedata;
-			if (!DataManager.data.p.TryGetValue(pluginnamespace, out pluginsavedata))
+			if (!DataManager.data.p.TryGetValue(pluginname, out pluginsavedata))
 				return;
 
 			int totalloadcount = 0;
@@ -175,14 +177,14 @@ namespace Oxide.Plugins.JtechCore {
 						loadcount[info]++;
 						totalloadcount++;
 					} else
-						Interface.Oxide.LogWarning($"[JtechCore] Failed to Load JDeployable: {de.Value} {de.Key}");
+						Interface.Oxide.LogWarning($"[JtechCore] Failed to Load JDeployable: [{pluginname}] {de.Value} {de.Key}");
 				}
 			}
 
-			string top = $"--- {totalloadcount} JDeployable(s) Loaded ---";
+			string top = $"--- {totalloadcount} JDeployable(s) from {pluginname} Loaded ---";
 			Interface.Oxide.LogInfo($"[JtechCore] {top}");
 			foreach (var count in loadcount)
-				Interface.Oxide.LogInfo($"[JtechCore] > {count.Value} [{count.Key.PluginInfo.Title}] {count.Key.Name}(s)");
+				Interface.Oxide.LogInfo($"[JtechCore] > {count.Value} {count.Key.Name}(s)");
 			Interface.Oxide.LogInfo($"[JtechCore] {new String('-', top.Length)}");
 		}
 
@@ -239,26 +241,27 @@ namespace Oxide.Plugins.JtechCore {
 
 		public static void SaveAllJDeployables() {
 
-			Interface.Oxide.LogWarning(spawnedDeployablesByPlugin.Count.ToString());
-
 			foreach (var p in spawnedDeployablesByPlugin) {
 				SaveJDeployables(p.Key);
 			}
 		}
 
-		public static void SaveJDeployables(string pluginnamespace) {
+		public static void SaveJDeployables(string pluginname) {
+			if (!DeployableTypesByPlugin.ContainsKey(pluginname))
+				return;
+
 			if (DataManager.data == null || DataManager.data.p == null) {
 				DataManager.Load();
 			}
 
 			Dictionary<int, DeployableSaveData> pluginsavedata;
-			if (DataManager.data.p.ContainsKey(pluginnamespace)) {
-				if (!DataManager.data.p.TryGetValue(pluginnamespace, out pluginsavedata)) {
+			if (DataManager.data.p.ContainsKey(pluginname)) {
+				if (!DataManager.data.p.TryGetValue(pluginname, out pluginsavedata)) {
 					return;
 				}
 			} else {
 				pluginsavedata = new Dictionary<int, DeployableSaveData>();
-				DataManager.data.p.Add(pluginnamespace, pluginsavedata);
+				DataManager.data.p.Add(pluginname, pluginsavedata);
 			}
 			
 			pluginsavedata.Clear();
@@ -267,7 +270,7 @@ namespace Oxide.Plugins.JtechCore {
 			Dictionary<JInfoAttribute, int> savecount = new Dictionary<JInfoAttribute, int>();
 
 			List<JDeployable> deps;
-			if (!spawnedDeployablesByPlugin.TryGetValue(pluginnamespace, out deps))
+			if (!spawnedDeployablesByPlugin.TryGetValue(pluginname, out deps))
 				return;
 			
 			foreach (var de in deps) {
@@ -282,16 +285,16 @@ namespace Oxide.Plugins.JtechCore {
 						totalsavecount++;
 						savecount[info]++;
 					} else
-						Interface.Oxide.LogWarning($"[JtechCore] Failed to Save JDeployable: [{pluginnamespace}] {info.Name} {de.Id}");
+						Interface.Oxide.LogWarning($"[JtechCore] Failed to Save JDeployable: [{pluginname}] {info.Name} {de.Id}");
 					
 				}
 			}
 
-			string top = $"--- {totalsavecount} JDeployable(s) Saved ---";
+			string top = $"--- {totalsavecount} JDeployable(s) from {pluginname} Saved ---";
 			Interface.Oxide.LogInfo($"[JtechCore] {top}");
 			foreach (var count in savecount) {
 				if (count.Value > 0)
-					Interface.Oxide.LogInfo($"[JtechCore] > {count.Value} [{count.Key.PluginInfo.Title}] {count.Key.Name}(s)");
+					Interface.Oxide.LogInfo($"[JtechCore] > {count.Value} {count.Key.Name}(s)");
 			}
 			Interface.Oxide.LogInfo($"[JtechCore] {new String('-', top.Length)}");
 			
@@ -316,12 +319,29 @@ namespace Oxide.Plugins.JtechCore {
 			return true;
 		}
 
-		public static void UnloadJDeployables() {
-			foreach (var de in spawnedDeployables) {
-				de.Value.Kill(BaseNetworkable.DestroyMode.None, false);
+		public static void UnloadJDeployables(string pluginname) {
+
+			List<JDeployable> deps;
+			if (!spawnedDeployablesByPlugin.TryGetValue(pluginname, out deps))
+				return;
+
+			List<JDeployable> killme = new List<JDeployable>(deps);
+			HashSet<Type> types = new HashSet<Type>();
+
+			foreach (JDeployable de in killme) {
+				types.Add(de.GetType());
+
+				de.Kill(BaseNetworkable.DestroyMode.None, false);
+
+				spawnedDeployables.Remove(de.Id);
 			}
-			spawnedDeployables.Clear();
-			spawnedDeployablesByType.Clear();
+
+			foreach (Type t in types) {
+				spawnedDeployablesByType.Remove(t);
+			}
+
+			spawnedDeployablesByPlugin.Remove(pluginname);
+
 		}
 
 		public static void UnloadJDeployable(int id) {
@@ -331,7 +351,7 @@ namespace Oxide.Plugins.JtechCore {
 		}
 
 		public static void UnloadJDeployable(JDeployable dep) {
-			dep.Kill();
+			dep.Kill(BaseNetworkable.DestroyMode.None, false);
 		}
 
 		public static void RemoveJDeployable(int id) {
@@ -348,29 +368,30 @@ namespace Oxide.Plugins.JtechCore {
 		public static Dictionary<Type, JInfoAttribute> DeployableTypes = new Dictionary<Type, JInfoAttribute>();
 		public static Dictionary<Type, List<JRequirementAttribute>> DeployableTypeRequirements = new Dictionary<Type, List<JRequirementAttribute>>();
 		public static Dictionary<Type, JUpdateAttribute> DeployableTypeUpdates = new Dictionary<Type, JUpdateAttribute>();
+		private static Dictionary<string, HashSet<Type>> DeployableTypesByPlugin = new Dictionary<string, HashSet<Type>>();
 
 		/// <summary>
 		/// JDeployable API
-		/// Registers JDeployable to the JDeployableManager
+		/// <para/>Registers JDeployable to the JDeployableManager
 		/// </summary>
 		/// <typeparam name="T">JDeployable</typeparam>
 		public static void RegisterJDeployable<T>() where T : JDeployable {
 
 			// get info attribute
-			JInfoAttribute info = (JInfoAttribute) System.Attribute.GetCustomAttribute(typeof(T), typeof(JInfoAttribute));
+			JInfoAttribute info = (JInfoAttribute) Attribute.GetCustomAttribute(typeof(T), typeof(JInfoAttribute));
 
 			if (info == null) {
 				Interface.Oxide.LogWarning($"[JtechCore] Failed to register ({typeof(T)}) - Missing JInfoAttribute.");
 				return;
 			}
-
+			
 			if (DeployableTypes.ContainsKey(typeof(T)) || DeployableTypeRequirements.ContainsKey(typeof(T))) {
 				Interface.Oxide.LogWarning($"[JtechCore] [{info.PluginInfo.Title}] {info.Name} has already been registered!");
 				return;
 			}
 
 			// get requirements attributes
-			List<JRequirementAttribute> requirements = System.Attribute.GetCustomAttributes(typeof(T), typeof(JRequirementAttribute)).OfType<JRequirementAttribute>().ToList();
+			List<JRequirementAttribute> requirements = Attribute.GetCustomAttributes(typeof(T), typeof(JRequirementAttribute)).OfType<JRequirementAttribute>().ToList();
 
 			if (requirements == null || requirements.Count == 0) {
 				Interface.Oxide.LogWarning($"[JtechCore] Failed to register ({typeof(T)}) - Missing JRequirementAttribute.");
@@ -379,22 +400,29 @@ namespace Oxide.Plugins.JtechCore {
 				Interface.Oxide.LogWarning($"[JtechCore] Failed to register ({typeof(T)}) - More than 5 JRequirementAttribute are not allowed.");
 				return;
 			}
-
-			requirements.OrderBy(x => x.ItemId); // order requirements by their item id (just like the rust crafting menu)
-
+			
 			// get JUpdate attribute
-			JUpdateAttribute jupdate = (JUpdateAttribute) System.Attribute.GetCustomAttribute(typeof(T), typeof(JUpdateAttribute));
+			JUpdateAttribute jupdate = (JUpdateAttribute) Attribute.GetCustomAttribute(typeof(T), typeof(JUpdateAttribute));
 
 			if (jupdate == null) {
 				Interface.Oxide.LogWarning($"[JtechCore] Failed to register ({typeof(T)}) - Missing JUpdateAttribute.");
 				return;
 			} 
 
+			// save all the attributes
+
 			DeployableTypes.Add(typeof(T), info);
+
+			requirements.OrderBy(x => x.ItemId); // order requirements by their item id (just like the rust crafting menu)
 			DeployableTypeRequirements.Add(typeof(T), requirements);
+
 			DeployableTypeUpdates.Add(typeof(T), jupdate);
 			if (!spawnedDeployablesByType.ContainsKey(typeof(T)))
 				spawnedDeployablesByType.Add(typeof(T), new List<JDeployable>());
+
+			if (!DeployableTypesByPlugin.ContainsKey(info.PluginInfo.Title))
+				DeployableTypesByPlugin.Add(info.PluginInfo.Title, new HashSet<Type>());
+			DeployableTypesByPlugin[info.PluginInfo.Title].Add(typeof(T));
 
 			Interface.Oxide.LogInfo($"[JtechCore] Registered JDeployable: [{info.PluginInfo.Title}] {info.Name}");
 			
@@ -402,13 +430,13 @@ namespace Oxide.Plugins.JtechCore {
 
 		/// <summary>
 		/// JDeployable API
-		/// Unregisters JDeployable from the JDeployableManager
+		/// <para/>Unregisters JDeployable from the JDeployableManager.
 		/// </summary>
 		/// <typeparam name="T">JDeployable</typeparam>
 		public static void UnregisterJDeployable<T>() where T : JDeployable {
 
 			// get info attribute
-			JInfoAttribute info = (JInfoAttribute) System.Attribute.GetCustomAttribute(typeof(T), typeof(JInfoAttribute));
+			JInfoAttribute info = (JInfoAttribute) Attribute.GetCustomAttribute(typeof(T), typeof(JInfoAttribute));
 
 			if (DeployableTypes.Remove(typeof(T)) && DeployableTypeRequirements.Remove(typeof(T)) && DeployableTypeUpdates.Remove(typeof(T))) {
 				Interface.Oxide.LogInfo($"[JtechCore] Unregistered JDeployable: [{info.PluginInfo.Title}] {info.Name}");
@@ -417,6 +445,42 @@ namespace Oxide.Plugins.JtechCore {
 			}
 		}
 
+		/// <summary>
+		/// JDeployable API
+		/// <para/>Unregisters JDeployables that were registered.
+		/// </summary>
+		/// <param name="pluginname">plugin name/title</param>
+		public static void UnregisterJDeployables(string pluginname) {
+
+			HashSet<Type> types;
+			if (!DeployableTypesByPlugin.TryGetValue(pluginname, out types))
+				return;
+
+			foreach (Type type in types) {
+
+				// get info attribute
+				JInfoAttribute info = (JInfoAttribute) Attribute.GetCustomAttribute(type, typeof(JInfoAttribute));
+
+				if (DeployableTypes.Remove(type) && DeployableTypeRequirements.Remove(type) && DeployableTypeUpdates.Remove(type)) {
+					Interface.Oxide.LogInfo($"[JtechCore] Unregistered JDeployable: [{info.PluginInfo.Title}] {info.Name}");
+				} else {
+					Interface.Oxide.LogInfo($"[JtechCore] Failed to Unregistered JDeployable: [{info.PluginInfo.Title}] {info.Name}");
+				}
+			}
+
+			DeployableTypesByPlugin.Remove(pluginname);
+		}
+
+		/// <summary>
+		/// JDeployable API
+		/// <para/>Returns true if this plugin has registered JDeployables.
+		/// </summary>
+		/// <param name="pluginname">plugin name/title</param>
+		/// <returns></returns>
+		public static bool isPluginRegistered(string pluginname) {
+			return DeployableTypesByPlugin.ContainsKey(pluginname);
+		}
+		
 		public static bool TryGetType(string name, out Type deployabletype) {
 
 			foreach (Type type in DeployableTypes.Keys)

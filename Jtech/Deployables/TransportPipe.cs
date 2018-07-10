@@ -19,6 +19,8 @@ namespace Oxide.Plugins.JtechDeployables {
 		// TODO Furnace Splitter and cui
 
 		public static List<int> flowrates = new List<int>() { 1, 5, 10, 30, 50 };
+		public static List<int> itemfiltersizes = new List<int>() { 0, 6, 12, 18, 30 };
+
 		public static string[] upgradeeffect = new string[] {
 			"assets/bundled/prefabs/fx/build/promote_wood.prefab",
 			"assets/bundled/prefabs/fx/build/promote_wood.prefab",
@@ -59,7 +61,7 @@ namespace Oxide.Plugins.JtechDeployables {
 		private Mode mode;
 
 		private static float pipesegdist = 3;
-		private static Vector3 pipefightoffset = new Vector3(0.001f, 0, 0.001f); // every other pipe segment is offset by this to remove z fighting
+		private static Vector3 pipefightoffset = new Vector3(0.001f, 0.001f, 0); // every other pipe segment is offset by this to remove z fighting
 
 
 		public new static bool CanStartPlacing(UserInfo userInfo) {
@@ -141,7 +143,7 @@ namespace Oxide.Plugins.JtechDeployables {
 			for (int i = 0; i < ents.Count; i++) {
 
 				BuildingBlock b = ents[i].gameObject.GetComponent<BuildingBlock>();
-				ents[i].gameObject.GetComponent<Child>()?.RunDelayed(i * 0.25f, () => {
+				ents[i].gameObject.GetComponent<Child>()?.RunDelayed(i * 0.2f, () => {
 					if (b == null)
 						return;
 					b.SetGrade(grade);
@@ -185,7 +187,7 @@ namespace Oxide.Plugins.JtechDeployables {
 			endPosition = destcont.CenterPoint() + ContainerOffset(destcont);
 
 			distance = Vector3.Distance(startPosition, endPosition);
-			Quaternion rotation = Quaternion.LookRotation(endPosition - startPosition) * Quaternion.Euler(90, 0, 0);
+			Quaternion rotation = Quaternion.LookRotation(endPosition - startPosition);
 
 			//isStartable();
 
@@ -193,6 +195,7 @@ namespace Oxide.Plugins.JtechDeployables {
 
 			int segments = (int) Mathf.Ceil(distance / pipesegdist);
 			float segspace = (distance - pipesegdist) / (segments - 1);
+			startPosition += ((rotation * Vector3.forward) * pipesegdist * 0.5f) + ((rotation * Vector3.down) * 0.7f);
 
 			for (int i = 0; i < segments; i++) {
 
@@ -202,10 +205,11 @@ namespace Oxide.Plugins.JtechDeployables {
 
 				if (i == 0) {
 					// the position thing centers the pipe if there is only one segment
-					ent = GameManager.server.CreateEntity("assets/prefabs/building core/pillar/pillar.prefab", (segments == 1) ? (startPosition + ((rotation * Vector3.up) * ((distance - pipesegdist) * 0.5f))) : startPosition, rotation);
+					ent = GameManager.server.CreateEntity("assets/prefabs/building core/wall.low/wall.low.prefab", (segments == 1) ? (startPosition + ((rotation * Vector3.up) * ((distance - pipesegdist) * 0.5f))) : startPosition, rotation);
+					data.SetTransform(ent.transform);
 					SetMainParent((BaseCombatEntity) ent);
 				} else {
-					ent = GameManager.server.CreateEntity("assets/prefabs/building core/pillar/pillar.prefab", Vector3.up * (segspace * i) + ((i % 2 == 0) ? Vector3.zero : pipefightoffset));
+					ent = GameManager.server.CreateEntity("assets/prefabs/building core/wall.low/wall.low.prefab", Vector3.forward * (segspace * i) + ((i % 2 == 0) ? Vector3.zero : pipefightoffset));
 					//ent = GameManager.server.CreateEntity("assets/prefabs/building core/pillar/pillar.prefab", startPosition);
 				}
 
@@ -228,7 +232,7 @@ namespace Oxide.Plugins.JtechDeployables {
 				if (i != 0) {
 
 					if (placing) { // placing animation
-						ent.gameObject.AddComponent<Child>()?.RunDelayed(i * 0.25f, () => {
+						ent.gameObject.AddComponent<Child>()?.RunDelayed(i * 0.2f, () => {
 							AddChildEntity((BaseCombatEntity) ent);
 							Effect.server.Run("assets/bundled/prefabs/fx/build/promote_wood.prefab", ent.transform.position + (ent.transform.up * (segspace * 0.5f)), Vector3.up);
 						});
@@ -240,11 +244,8 @@ namespace Oxide.Plugins.JtechDeployables {
 				// xmas lights
 
 				//BaseEntity lights = GameManager.server.CreateEntity("assets/prefabs/misc/xmas/christmas_lights/xmas.lightstring.deployed.prefab", (Vector3.up * pipesegdist * 0.5f) + (Vector3.forward * 0.13f) + (Vector3.up * (segspace * i) + ((i % 2 == 0) ? Vector3.zero : pipefightoffset)), Quaternion.Euler(0, -60, 90));
-				//lights.enableSaving = false;
 				//lights.Spawn();
-				//lights.SetParent(mainparent);
-				//jPipeSegChildLights.Attach(lights, this);
-
+				//AddChildEntity((BaseCombatEntity) lights);
 			}
 
 			if (placing) {
@@ -701,15 +702,17 @@ namespace Oxide.Plugins.JtechDeployables {
 		}
 
 		public override List<Cui.ButtonInfo> GetMenuButtons(UserInfo userInfo) {
-			return data.Get("grade") == "0" ? new List<Cui.ButtonInfo>() { // if twig
-				new Cui.ButtonInfo("Change Direction", "changedir"),
-				new Cui.ButtonInfo(ModeNames[(int) mode], "mode"),
-			} : new List<Cui.ButtonInfo>() { // not twig
-				new Cui.ButtonInfo("Auto Starter", "autostarter", bool.Parse(data.Get("autostart", "false")), destisstartable ? Cui.ButtonInfo.ButtonState.Enabled : Cui.ButtonInfo.ButtonState.Disabled),
-				new Cui.ButtonInfo("Change Direction", "changedir"),
-				new Cui.ButtonInfo(ModeNames[(int) mode], "mode"),
-				new Cui.ButtonInfo("Item Filter", "filter", mode == Mode.Fueling ? Cui.ButtonInfo.ButtonState.Disabled : Cui.ButtonInfo.ButtonState.Enabled),
+			List<Cui.ButtonInfo> buttons = new List<Cui.ButtonInfo> {
+				new Cui.ButtonInfo("Change Direction", "changedir")
 			};
+			if (data.Get("grade") != "0") {	// if not twig
+				buttons.Add(new Cui.ButtonInfo("Auto Starter", "autostarter", bool.Parse(data.Get("autostart", "false")), destisstartable ? Cui.ButtonInfo.ButtonState.Enabled : Cui.ButtonInfo.ButtonState.Disabled));
+				buttons.Add(new Cui.ButtonInfo(ModeNames[(int) mode], "mode"));
+			}
+			if (itemfiltersizes[int.Parse(data.Get("grade"))] > 0) // if filtersize isn't 0
+				buttons.Add(new Cui.ButtonInfo("Item Filter", "filter", mode == Mode.Fueling ? Cui.ButtonInfo.ButtonState.Disabled : Cui.ButtonInfo.ButtonState.Enabled));
+
+			return buttons;
 		}
 
 		public override void MenuButtonCallback(UserInfo player, string value) {

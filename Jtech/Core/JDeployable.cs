@@ -26,6 +26,7 @@ namespace Oxide.Plugins.JtechCore {
 
 				public string shortname;
 				public int itemid;
+				public int blueprintTarget;
 				public float condition;
 				public int amount;
 				public int ammoamount;
@@ -34,13 +35,14 @@ namespace Oxide.Plugins.JtechCore {
 				public bool weapon;
 				public List<SavedItem> mods;
 
-				public SavedItem FromItem(Item item) {
+				public static SavedItem FromItem(Item item) {
 					SavedItem si = new SavedItem {
 						shortname = item.info?.shortname,
 						amount = item.amount,
 						mods = new List<SavedItem>(),
 						skinid = item.skin,
 						itemid = item.info.itemid,
+						blueprintTarget = item.blueprintTarget,
 						weapon = false
 					};
 					if (item.hasCondition)
@@ -81,8 +83,10 @@ namespace Oxide.Plugins.JtechCore {
 						if (amount < 1)
 							amount = 1;
 						Item item = ItemManager.CreateByItemID(itemid, amount, skinid);
+						if (blueprintTarget != 0)
+							item.blueprintTarget = blueprintTarget;
 						if (item.hasCondition)
-							item.condition =condition;
+							item.condition = condition;
 						return item;
 					}
 				}
@@ -195,6 +199,7 @@ namespace Oxide.Plugins.JtechCore {
 			
 			MainParent = baseCombatEntity;
 			MainParent.enableSaving = false;
+			MainParent.transform.SetPositionAndRotation(data.GetPosition(), data.GetRotation());
 		}
 
 		/// <summary>
@@ -236,8 +241,10 @@ namespace Oxide.Plugins.JtechCore {
 		/// <param name="newhealth"></param>
 		public void SetHealth(float newhealth) {
 			data.health = newhealth;
-			if (MainParent != null)
+			if (MainParent != null) {
 				MainParent.health = newhealth;
+				MainParent.SendNetworkUpdate(BasePlayer.NetworkQueue.UpdateDistance);
+			}
 			foreach (BaseCombatEntity e in ChildEntities) {
 				e.health = newhealth;
 				e.SendNetworkUpdate(BasePlayer.NetworkQueue.UpdateDistance);

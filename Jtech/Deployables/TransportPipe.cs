@@ -184,8 +184,8 @@ namespace Oxide.Plugins.JtechDeployables {
 			flowrate = flowrates[int.Parse(data.Get("grade", "0"))];
 			mode = (Mode) int.Parse(data.Get("mode", "0"));
 
-			startPosition = sourcecont.CenterPoint() + ContainerOffset(sourcecont);
-			endPosition = destcont.CenterPoint() + ContainerOffset(destcont);
+			startPosition = sourcecont.CenterPoint() + ContainerOffset.Get(sourcecont);
+			endPosition = destcont.CenterPoint() + ContainerOffset.Get(destcont);
 
 			distance = Vector3.Distance(startPosition, endPosition);
 			Quaternion rotation = Quaternion.LookRotation(endPosition - startPosition);
@@ -461,38 +461,70 @@ namespace Oxide.Plugins.JtechDeployables {
 			return cont.net.ID;
 		}
 
-		private static Vector3 ContainerOffset(BaseEntity e) {
-			if (e is BoxStorage)
-				return Vector3.zero;
-			else if (e is BaseOven) {
-				string panel = e.GetComponent<BaseOven>().panelName;
+		private static class ContainerOffset {
 
-				if (panel == "largefurnace")
-					return Vector3.up * -1.5f;
-				else if (panel == "smallrefinery")
-					return e.transform.rotation * new Vector3(-1, 0, -0.1f);
-				else if (panel == "bbq")
-					return Vector3.up * 0.03f;
-				else
-					return Vector3.up * -0.3f;
-				//} else if (e is ResourceExtractorFuelStorage) {
-				//if (e.GetComponent<StorageContainer>().panelName == "fuelstorage") {
-				//    return contoffset.pumpfuel;
-				//} else {
-				//    return e.transform.rotation * contoffset.pumpoutput;
-				//}
-			} else if (e is AutoTurret) {
-				return Vector3.up * -0.58f;
-			} else if (e is SearchLight) {
-				return Vector3.up * -0.5f;
-			} else if (e is WaterCatcher) {
-				return Vector3.up * -0.6f;
-			} else if (e is LiquidContainer) {
-				if (e.GetComponent<LiquidContainer>()._collider.ToString().Contains("purifier"))
-					return Vector3.up * 0.25f;
-				return Vector3.up * 0.2f;
+			// Relative positions where the pipe connects to the container
+			private static Vector3 Turret				= new Vector3(0, -0.58f, 0);
+			private static Vector3 Refinery				= new Vector3(-1, 0, -0.1f);
+			private static Vector3 Furnace				= new Vector3(0, -0.3f, 0);
+			private static Vector3 LargeFurnace			= new Vector3(0, -1.5f, 0);
+			private static Vector3 SearchLight			= new Vector3(0, -0.5f, 0);
+			private static Vector3 PumpFuel				= Vector3.zero;
+			private static Vector3 PumpOutput			= new Vector3(-1, 2, 0);
+			private static Vector3 Recycler				= Vector3.zero;
+			private static Vector3 LargeWaterCatcher	= new Vector3(0, -0.6f, 0);
+			private static Vector3 SmallWaterCatcher	= new Vector3(0, -0.6f, 0);
+			private static Vector3 WaterBarrel			= new Vector3(0, 0.2f, 0);
+			private static Vector3 WaterPurifier		= new Vector3(0, 0.25f, 0);
+			private static Vector3 BBQ					= Vector3.up * 0.03f;
+			//private static Vector3 QuarryFuel			= new Vector3(1,-0.2f,0); 
+			//private static Vector3 QuarryOutput		= new Vector3(1,0,0); 
+
+			/// <summary>
+			/// Get the container offset for the given BaseEntity
+			/// </summary>
+			/// <param name="e">target entity</param>
+			/// <returns>container offset</returns>
+			public static Vector3 Get(BaseEntity e) {
+
+				if (e is BoxStorage)
+					return Vector3.zero;
+
+				if (e is BaseOven) {
+					string panel = e.GetComponent<BaseOven>().panelName;
+
+					if (panel == "largefurnace")
+						return LargeFurnace;
+					if (panel == "smallrefinery")
+						return e.transform.rotation * Refinery;
+					if (panel == "bbq")
+						return BBQ;
+
+					//} else if (e is ResourceExtractorFuelStorage) {
+					//if (e.GetComponent<StorageContainer>().panelName == "fuelstorage") {
+					//    return contoffset.pumpfuel;
+					//} else {
+					//    return e.transform.rotation * contoffset.pumpoutput;
+					//}
+
+					return Furnace;
+				} 
+
+				if (e is AutoTurret)
+					return Turret;
+				if (e is SearchLight)
+					return SearchLight;
+				if (e is WaterCatcher)
+					return SmallWaterCatcher;
+
+				if (e is LiquidContainer) {
+					if (e.GetComponent<LiquidContainer>()._collider.ToString().Contains("purifier"))
+						return WaterPurifier;
+					return WaterBarrel;
+				}
+
+				return Vector3.zero;
 			}
-			return Vector3.zero;
 		}
 		
 		/// <summary>

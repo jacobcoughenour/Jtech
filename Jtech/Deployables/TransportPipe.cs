@@ -44,6 +44,7 @@ namespace Oxide.Plugins.JtechDeployables {
 			"Fueling"
 		};
 
+
 		// these are just cached values that will not be saved
 
 		public StorageContainer sourcecont;
@@ -179,7 +180,7 @@ namespace Oxide.Plugins.JtechDeployables {
 			destContainerIconUrl = Icons.GetContainerIconURL(destcont, 100);
 
 			isWaterPipe = sourcecont is LiquidContainer;
-			destisstartable = isStartable(destcont);
+			destisstartable = IsStartable(destcont);
 			flowrate = flowrates[int.Parse(data.Get("grade", "0"))];
 			mode = (Mode) int.Parse(data.Get("mode", "0"));
 
@@ -493,8 +494,13 @@ namespace Oxide.Plugins.JtechDeployables {
 			}
 			return Vector3.zero;
 		}
-		private bool isStartable(BaseEntity e) => e is BaseOven || e is Recycler || destchildid == 2;
-
+		
+		/// <summary>
+		/// Is the given BaseEntity startable?
+		/// </summary>
+		/// <param name="e"></param>
+		/// <returns></returns>
+		private bool IsStartable(BaseEntity e) => e is BaseOven || e is Recycler || destchildid == 2;
 		
 
 		private void TurnOnDest() {
@@ -536,7 +542,7 @@ namespace Oxide.Plugins.JtechDeployables {
 			data.Set("sourcechildid", scid);
 			data.Set("destchildid", dcid);
 
-			destisstartable = isStartable(destcont);
+			destisstartable = IsStartable(destcont);
 
 			if (!destisstartable && mode == Mode.Fueling) {
 				mode = 0;
